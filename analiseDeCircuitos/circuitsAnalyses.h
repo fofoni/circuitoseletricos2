@@ -23,6 +23,10 @@ using namespace std;
 
 #define     FILE_IS_NOT_OPEN    1
 
+class tensionAndCurrentName : public map <int, string>{
+	public:
+};
+
 class element {
  	public:
  		int 	originNodeOrPositiveOutputNode;
@@ -32,6 +36,7 @@ class element {
  		int		controledDestinationNodeOrNegativeInputNode;
  		float 	inicialConditions;
  		string	pairsOfValues;
+ 		string  parameter;
 		int		nocrtlPositive;
  		int  	nocrtlNegative;
  		float 	gon;
@@ -40,10 +45,19 @@ class element {
  	};
 
 class elementsList : public map<string, element*> {
-
     public:
 	   void	getElement (string, int);
+	   int numberOfNodes();
+	   void buildModifiedNodalMatrix ();
+	   string locateCurrent (int, int);
 
 };
+
+class modifiedMatrix : public map<int, map<int, float> > {   /* line, columns, content */
+	public:
+		void solveMatrixSystem ();
+};
+
+
 
 #endif
