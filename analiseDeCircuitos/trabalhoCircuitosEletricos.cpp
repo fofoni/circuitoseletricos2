@@ -16,26 +16,28 @@ int main (int argc, char *argv[]) {
 	ifstream myFile;
  	string line;
     elementsList list;
+    modifiedMatrix matrix;
 
-    myFile.open (argv[0]);
-
-    cout << "ola!!\n" <<endl;
+    myFile.open (argv[1]);
 
  	if (!(myFile.is_open())) {
  		cout << "Erro (" << errno << "): " << strerror (errno) << "." << endl;
  		exit (FILE_IS_NOT_OPEN);
  	}
 
-    if (!myFile.good())
-        cout << "Esse arquivo nao possui netlist" << endl;
+ 	getline(myFile, line);
+ 	if (!myFile.good())
+ 	        cout << "Esse arquivo nao possui netlist" << endl;
+ 	    else
+ 	    	cout << "file is good" <<endl;
+
  	while (myFile.good()) {
+
  		getline(myFile, line);
  		switch (line[0]){
 
                     case 'R':
-                    case 'I':
                     case 'L':
- 					case 'V':
                     case 'C':
  						list.getElement (line, 1);
  						break;
@@ -52,12 +54,23 @@ int main (int argc, char *argv[]) {
  					case '$':
 						list.getElement (line, 4);
  						break;
+ 					case 'V':
+ 					case 'I':
+ 						list.getElement (line, 5);
+ 						break;
                     default:
                         cout << "Esse elemento " << line[0] << " nao esta implementado" << endl;
                         break;
  		}
  	}
  	myFile.close();
+
+ 	list.buildModifiedNodalMatrix();
+
+ 	matrix.solveMatrixSystem();
+
+ 	cin.get();
+ 	return 0;
 }
 
 
