@@ -18,6 +18,7 @@ void elementsList::getElement (string line, int situation) {
 	int quantityOfSpaces = 0;
 	string elementData;
 
+
 	do{
 		while (line [auxiliar] != ' ')
 			auxiliar++;
@@ -48,6 +49,9 @@ void elementsList::getElement (string line, int situation) {
 				 	 	 break;
 				 	 case (4):
 				 	 	 ( (*this)[elementData] )->nocrtlPositive = atoi (elementData.c_str());
+				 	 break;
+				 	 case (5):
+				 		 ( (*this)[elementData])->parameter = elementData;
 				 	 break;
 				 }
 				 break;
@@ -88,9 +92,192 @@ void elementsList::getElement (string line, int situation) {
 	} while (line [auxiliar] != '\n');
 }
 
+int elementsList::numberOfNodes() {
+
+	int node = 0;
+
+	map <string, element *> :: iterator auxiliar;
+
+	for (auxiliar = this->begin(); auxiliar != this->end(); auxiliar++) {
+
+		if ( ((auxiliar->second)->controledDestinationNodeOrNegativeInputNode) > node )
+			node = ((auxiliar->second)->controledDestinationNodeOrNegativeInputNode);
+	}
+
+	return (node);
+}
+
+/*
+string elementsList::locateCurrent (int node1, int node2){
+
+	string name = NULL;
+
+	map <string, element *> :: iterator auxiliar;
+
+	for (auxiliar = this->begin(); auxiliar != this->end(); auxiliar++) {
+
+			if ( (((auxiliar->second)-> originNodeOrPositiveOutputNode) == node1 ) &&
+			     (((auxiliar->second)-> destinationNodeOrNegativeOutputNode) == node2 ))
+			     name = auxiliar->first;
+
+	}
+	return (name);
+}
+*/
+
+void elementsList::buildModifiedNodalMatrix (){
+
+	modifiedMatrix matrix1;
+	modifiedMatrix matrix2;
+	modifiedMatrix matrix3;
+	tensionAndCurrentName listToPrint;
+	int index = numberOfNodes();
+
+	map <string, element *> :: iterator auxiliar;
+
+	for (auxiliar = this->begin(), index++; auxiliar != this->end(); auxiliar++, index++) {
+
+		switch (auxiliar->first[0]) {
+
+			case 'R': /* Resistor */
+					matrix1 [(auxiliar->second)->originNodeOrPositiveOutputNode]
+					        [(auxiliar->second)->originNodeOrPositiveOutputNode] += ( 1/((auxiliar->second)->value) );
+
+					matrix1 [(auxiliar->second)->destinationNodeOrNegativeOutputNode]
+							[(auxiliar->second)->destinationNodeOrNegativeOutputNode] += ( 1/((auxiliar->second)->value) );
+
+					matrix1 [(auxiliar->second)->originNodeOrPositiveOutputNode]
+						    [(auxiliar->second)->destinationNodeOrNegativeOutputNode] += ( -1/((auxiliar->second)->value) );
+
+					matrix1 [(auxiliar->second)->destinationNodeOrNegativeOutputNode]
+					        [(auxiliar->second)->originNodeOrPositiveOutputNode] += ( -1/((auxiliar->second)->value) );
+				break;
+			case 'E': /* Fonte de tensao controlada a tensao */
+					matrix1 [index]
+					        [(auxiliar->second)->originNodeOrPositiveOutputNode] += -1;
+
+					matrix1 [index]
+					[(auxiliar->second)->destinationNodeOrNegativeOutputNode] += 1;
+
+					matrix1 [index]
+					[(auxiliar->second)->controledOriginNodeOrPositiveInputNode] += ((auxiliar->second)->value);
+
+					matrix1 [index]
+					[(auxiliar->second)->controledDestinationNodeOrNegativeInputNode] += -((auxiliar->second)->value);
+
+					matrix1 [(auxiliar->second)->originNodeOrPositiveOutputNode]
+					       [index] += 1;
+
+					matrix1 [(auxiliar->second)->destinationNodeOrNegativeOutputNode]
+							[index] += -1;
+
+					listToPrint[index] = 'j' + (auxiliar->first);
+				break;
+			case 'F': /* Fonte de corrente controlada a corrente */
+					matrix1 [index]
+					        [(auxiliar->second)->controledOriginNodeOrPositiveInputNode] += -1;
+
+					matrix1 [index]
+					        [(auxiliar->second)->controledDestinationNodeOrNegativeInputNode] += +1;
+
+					matrix1 [(auxiliar->second)->originNodeOrPositiveOutputNode]
+					        [index] += 1;
+
+					matrix1 [(auxiliar->second)->destinationNodeOrNegativeOutputNode]
+					        [index] += -1;
+
+					matrix1 [(auxiliar->second)->controledOriginNodeOrPositiveInputNode]
+					        [index] += ((auxiliar->second)->value);
+
+					matrix1 [(auxiliar->second)->controledDestinationNodeOrNegativeInputNode]
+					        [index] += -((auxiliar->second)->value);
+
+					listToPrint[index] = 'j' + (auxiliar->first);
+									/*	(locateCurrent (((auxiliar->second)->controledOriginNodeOrPositiveInputNode),
+													   ((auxiliar->second)->controledDestinationNodeOrNegativeInputNode))); */
+				break;
+			case 'G': /* Fonte de corrente controlada a tensao */
+					matrix1 [(auxiliar->second)->originNodeOrPositiveOutputNode]
+					        [(auxiliar->second)->controledOriginNodeOrPositiveInputNode] += ((auxiliar->second)->value);
+
+					matrix1 [(auxiliar->second)->originNodeOrPositiveOutputNode]
+					        [(auxiliar->second)->controledDestinationNodeOrNegativeInputNode] += -((auxiliar->second)->value);
+
+					matrix1 [(auxiliar->second)->destinationNodeOrNegativeOutputNode]
+					        [(auxiliar->second)->controledOriginNodeOrPositiveInputNode] += -((auxiliar->second)->value);
+
+					matrix1 [(auxiliar->second)->destinationNodeOrNegativeOutputNode]
+					        [(auxiliar->second)->controledDestinationNodeOrNegativeInputNode] += ((auxiliar->second)->value);
+				break;
+			case 'H': /* Fonte de tensao controlada a corrente */
+					matrix1 [index]
+					        [(auxiliar->second)->originNodeOrPositiveOutputNode] += -1;
+
+					matrix1 [index]
+							[(auxiliar->second)->destinationNodeOrNegativeOutputNode] += 1;
+
+					matrix1 [(auxiliar->second)->originNodeOrPositiveOutputNode]
+					        [index] += 1;
+
+					matrix1 [(auxiliar->second)->destinationNodeOrNegativeOutputNode]
+					        [index] += -1;
+
+					listToPrint[index] = 'j' + (auxiliar->first);
+
+					index++;
+
+					matrix1 [index]
+					        [(auxiliar->second)->controledOriginNodeOrPositiveInputNode] += -1;
+
+					matrix1 [index]
+					        [(auxiliar->second)->controledDestinationNodeOrNegativeInputNode] += +1;
+
+					matrix1 [(auxiliar->second)->originNodeOrPositiveOutputNode]
+					        [index] += 1;
+
+					matrix1 [(auxiliar->second)->destinationNodeOrNegativeOutputNode]
+					        [index] += -1;
+
+					matrix1 [index--]
+					        [index] += ((auxiliar->second)->value);
+
+					listToPrint[index] = 'j' + (auxiliar->first);
+									/*	(locateCurrent (((auxiliar->second)->controledOriginNodeOrPositiveInputNode),
+					    			    ((auxiliar->second)->controledDestinationNodeOrNegativeInputNode))); */
+
+				break;
+			case 'I': /*Fonte de corrente*/
+					matrix3 [(auxiliar->second)->originNodeOrPositiveOutputNode][0] += -((auxiliar->second)->value);
+
+					matrix3 [(auxiliar->second)->destinationNodeOrNegativeOutputNode][0] += ((auxiliar->second)->value);
+				break;
+			case 'V': /*Fonte de tensao */
+					matrix1 [index]
+					        [(auxiliar->second)->originNodeOrPositiveOutputNode] += -1;
+
+					matrix1 [index]
+					        [(auxiliar->second)->destinationNodeOrNegativeOutputNode] += +1;
+
+					matrix1 [(auxiliar->second)->originNodeOrPositiveOutputNode]
+					        [index] += 1;
+
+					matrix1 [(auxiliar->second)->destinationNodeOrNegativeOutputNode]
+					        [index] += -1;
+
+					listToPrint[index] = 'j' + (auxiliar->first);
+				break;
+			case 'L': /*indutor*/
+				break;
+		}
+	}
+
+}
+
+void modifiedMatrix::solveMatrixSystem () {
 
 
 
+	}
 
 
 
