@@ -11,6 +11,13 @@
 
 using namespace std;
 
+
+/*****************************************************************************************************/
+/*Funcao responsavel em, a partir da leitura individual de cada linha do arquivo dado, distribuir
+ * os elementos do circuito assim como seus respectivos parametros no objeto list, pertencente a
+ * classe elementsList.
+ */
+
 void elementsList::getElement (string line, int situation) {
 
 	int auxiliar = 0;
@@ -28,7 +35,7 @@ void elementsList::getElement (string line, int situation) {
 
 		switch (quantityOfSpaces) {
 			case 0:
-				(*this)[elementData] = new element;
+				(*this)[elementData] = new element;    /* Novo elemento é inserido ao objeto */
 				break;
 			case 1:
 				( (*this)[elementData] )->originNodeOrPositiveOutputNode = atoi (elementData.c_str());
@@ -92,6 +99,9 @@ void elementsList::getElement (string line, int situation) {
 	} while (line [auxiliar] != '\n');
 }
 
+/*********************************************************************************************/
+/* Função responsável em retornar a quantidade de nos que o circuito analisado possui.
+ */
 int elementsList::numberOfNodes() {
 
 	int node = 0;
@@ -125,16 +135,26 @@ string elementsList::locateCurrent (int node1, int node2){
 }
 */
 
-void elementsList::buildModifiedNodalMatrix (int *matrixOrder, modifiedMatrix matrix1, modifiedMatrix matrix3){
+/***************************************************************************************************/
+/* Funcao responsavel em, a partir da identificacao de cada elemento pertencente ao objeto list,
+ * construir sua respectica estampa e soma-la as matrizes da analise nodal modificada.
+ * As matrizes serao os objetos matrix1 e matrix3, que pertencem a classe modifiedMatrix e representam,
+ * respectivamente, as matrizes A e B do sistema A x = B.
+ */
+void elementsList::buildModifiedNodalMatrix (int *matrixOrder, tensionAndCurrent listToPrint, modifiedMatrix matrix1, modifiedMatrix matrix3){
 
-	tensionAndCurrentName listToPrint;
+	/* O index inicialmente corresponde ao numero de nos do circuito. Ao longo da funcao, ele
+	 * é incrementado cada vez que se faz necessario o calculo de uma nova corrente no circuito.
+	 * Ao final da funcao, seu valor corresponde a ordem da matrix A
+	 */
 	int index = numberOfNodes();
+	char *node;
 
 	map <string, element *> :: iterator auxiliar;
 
-	for (auxiliar = this->begin(), index++; auxiliar != this->end(); auxiliar++, index++) {
+	for (auxiliar = this->begin(), index++; auxiliar != this->end(); auxiliar++) {
 
-		switch (auxiliar->first[0]) {
+		switch (auxiliar->first[0]) {  /* While responsavel pela construcao da estampa dos elementos */
 
 			case 'R': /* Resistor */
 					matrix1 [(auxiliar->second)->originNodeOrPositiveOutputNode]
@@ -170,6 +190,8 @@ void elementsList::buildModifiedNodalMatrix (int *matrixOrder, modifiedMatrix ma
 							[index] += -1;
 
 					listToPrint[index] = 'j' + (auxiliar->first);
+
+					index++;
 				break;
 			case 'F': /* Fonte de corrente controlada a corrente */
 					matrix1 [index]
@@ -190,9 +212,14 @@ void elementsList::buildModifiedNodalMatrix (int *matrixOrder, modifiedMatrix ma
 					matrix1 [(auxiliar->second)->controledDestinationNodeOrNegativeInputNode]
 					        [index] += -((auxiliar->second)->value);
 
-					listToPrint[index] = 'j' + (auxiliar->first);
+					/* Quando a fonte depende de uma corrente, a corrente sera calculada e sera impressa no arquivo
+					 * sendo referida por jab, onde a e o no de origem da corrente e b e o no de destino da corrente.
+					 */
+					sprintf (node, "%i%i", (auxiliar->second)->controledOriginNodeOrPositiveInputNode, (auxiliar->second)->controledDestinationNodeOrNegativeInputNode);
+					listToPrint[index] = 'j' + node;
 									/*	(locateCurrent (((auxiliar->second)->controledOriginNodeOrPositiveInputNode),
 													   ((auxiliar->second)->controledDestinationNodeOrNegativeInputNode))); */
+					index++;
 				break;
 			case 'G': /* Fonte de corrente controlada a tensao */
 					matrix1 [(auxiliar->second)->originNodeOrPositiveOutputNode]
@@ -239,9 +266,11 @@ void elementsList::buildModifiedNodalMatrix (int *matrixOrder, modifiedMatrix ma
 					matrix1 [index--]
 					        [index] += ((auxiliar->second)->value);
 
-					listToPrint[index] = 'j' + (auxiliar->first);
+					sprintf (node, "%i%i", (auxiliar->second)->controledOriginNodeOrPositiveInputNode, (auxiliar->second)->controledDestinationNodeOrNegativeInputNode);
+					listToPrint[index] = 'j' + node;
 									/*	(locateCurrent (((auxiliar->second)->controledOriginNodeOrPositiveInputNode),
 					    			    ((auxiliar->second)->controledDestinationNodeOrNegativeInputNode))); */
+					index++;
 
 				break;
 			case 'I': /*Fonte de corrente*/
@@ -263,6 +292,7 @@ void elementsList::buildModifiedNodalMatrix (int *matrixOrder, modifiedMatrix ma
 					        [index] += -1;
 
 					listToPrint[index] = 'j' + (auxiliar->first);
+					index++;
 				break;
 			case 'L': /*indutor*/
 				break;
@@ -277,9 +307,8 @@ void elementsList::buildModifiedNodalMatrix (int *matrixOrder, modifiedMatrix ma
 
 /**************************************************************************************************/
 
-
-/* Function responsable for solving the system A x = B */
-void modifiedMatrix::solveMatrixSystem (int * matrixOrder, modifiedMatrix matrix1, modifiedMatrix matrix3) {
+/* Funcao responsavel em resolver o sistema  A x = B */
+void modifiedMatrix::solveMatrixSystem (int * matrixOrder, modifiedMatrix matrix1, modifiedMatrix matrix2, modifiedMatrix matrix3) {
 
 	int order = *matrixOrder;
 	int i, j;
@@ -288,8 +317,7 @@ void modifiedMatrix::solveMatrixSystem (int * matrixOrder, modifiedMatrix matrix
 	float x[order];
 	float B[order];
 
-
-	/* Building Matrix A */
+		/* Construindo a Matriz A */
 	for (i=1; i == order; i++){
 	    	for (j=1; j == order; j++){
 	    		A[i][j] = 0;
@@ -297,17 +325,55 @@ void modifiedMatrix::solveMatrixSystem (int * matrixOrder, modifiedMatrix matrix
 	    	}
 	}
 
-	/* Building Matrix B */
+	/* Construindo a Matriz B */
 	for (i=1; i== order; i++){
 		B[i] = 0;
 		B[i] += matrix3[i][0];
 	}
 
 
-	/* Solving system and finding x */
+	/* Resolvendo o sistema e achando x */
 
+
+	/* Copiando a matriz x para matrix2 */
+	for (i=1; i== order; i++){
+		matrix2[i][0] = x[i];
+		}
+}
+
+/****************************************************************************************************/
+
+/* Funcao responsavel em imprimir o resultado em um arquivo */
+void elementsList :: printResult (char* argv[], tensionAndCurrent listToPrint, modifiedMatrix matrix2) {
+
+	map <int, string> :: iterator list;
+	ofstream answerFile;
+	int auxiliar = numberOfNodes();
+
+	answerFile.open (*argv[1] + "_answer");
+
+	/* Imprimindo a primeira linha no arquivo */
+	answerFile << " t" << endl;
+	for (int aux = auxiliar; aux == 0; aux++) {
+		answerFile << " " << aux << endl;
+		}
+    for (list = listToPrint.begin(); list != listToPrint.end(); list++){
+    	answerFile << " " << list->second << endl;
+    	auxiliar++;
+    }
+    answerFile << "\n";
+
+    /* Imprimindo o resto do arquivo */
+
+    for (int aux = 1; aux == auxiliar; aux ++){
+    	answerFile << " " << matrix2[aux][0] ;
+    }
+    answerFile << "\n";
 
 }
+
+
+
 
 
 

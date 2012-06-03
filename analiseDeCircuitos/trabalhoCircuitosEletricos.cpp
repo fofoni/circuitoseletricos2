@@ -16,9 +16,11 @@ int main (int argc, char *argv[]) {
 	ifstream myFile;
  	string line;
     elementsList list;
-    modifiedMatrix matrix1; /* A */
-    modifiedMatrix matrix3; /* B */
-    int *matrixOrder;
+    tensionAndCurrent 	listToPrint;
+    modifiedMatrix 			matrix1; /* A */
+    modifiedMatrix			matrix2; /* x */
+    modifiedMatrix 			matrix3; /* B */
+    int *matrixOrder;       /* Ponteiro que guarda a ordem que a matriz A possuira */
 
 
     myFile.open (argv[1]);
@@ -31,9 +33,9 @@ int main (int argc, char *argv[]) {
  	getline(myFile, line);
  	if (!myFile.good())
  	        cout << "Esse arquivo nao possui netlist" << endl;
- 	    else
- 	    	cout << "file is good" <<endl;
 
+
+ 	/* Durante a leitura do arquivo, os elementos assim como seus respectivos parametros sao guardados dentro da classe elementsList */
  	while (myFile.good()) {
 
  		getline(myFile, line);
@@ -66,14 +68,19 @@ int main (int argc, char *argv[]) {
                         break;
  		}
  	}
+
  	myFile.close();
 
- 	list.buildModifiedNodalMatrix(matrixOrder, matrix1, matrix3);
+ 	list.buildModifiedNodalMatrix(matrixOrder, listToPrint, matrix1, matrix3);
 
- 	matrix1.solveMatrixSystem(matrixOrder, matrix1, matrix3);
+ 	matrix1.solveMatrixSystem (matrixOrder, matrix1, matrix2, matrix3);
+
+ 	list.printResult (argv, listToPrint, matrix2);
+
 
 
  	cin.get();
+
  	return 0;
 }
 

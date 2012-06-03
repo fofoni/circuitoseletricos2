@@ -18,16 +18,15 @@
 
 using namespace std;
 
-#ifndef		 MYFUNCTIONS_H_
-#define 	 MYFUNCTIONS_H_
+#ifndef		 CIRCUITSANALYSES_H_
+#define 	 CIRCUITSANALYSES_H_
 
 #define     FILE_IS_NOT_OPEN    1
 #define 	ARMA_DONT_USE_BLAS
 
-class tensionAndCurrentName : public map <int, string>{
-	public:
-};
 
+
+/* Classe que possui os parametros de todos os possiveis elementos dentro de um netlist */
 class element {
  	public:
  		int 	originNodeOrPositiveOutputNode;
@@ -45,20 +44,26 @@ class element {
  		float	vref;
  	};
 
+/* Classe que vai conter as matrizes da analise modificada, formada a partir das estampas dos elementos */
 class modifiedMatrix : public map<int, map<int, float> > {   /* line, columns, content */
 	public:
-		void solveMatrixSystem (int*, modifiedMatrix, modifiedMatrix);
+	   void 	solveMatrixSystem (int*, modifiedMatrix, modifiedMatrix, modifiedMatrix);
 };
 
+/* Classe que numera todas as variaveis do circuitos, sendo elas tensoes no nos e devidas correntes */
+class tensionAndCurrent : public map <int, string>{
+};
+
+/* Classe cuja chave e o nome do elemento do circuito formada pela classe element */
 class elementsList : public map<string, element*> {
     public:
-	   void	getElement (string, int);
-	   int numberOfNodes();
-	   void buildModifiedNodalMatrix (int*, modifiedMatrix, modifiedMatrix);
+	   void		getElement (string, int);
+	   int 		numberOfNodes();
+	   void		buildModifiedNodalMatrix (int*, tensionAndCurrent, modifiedMatrix, modifiedMatrix);
+	   void 	printResult (char**, tensionAndCurrent, modifiedMatrix);
 	  /* string locateCurrent (int, int);*/
 
 };
-
 
 
 #endif
