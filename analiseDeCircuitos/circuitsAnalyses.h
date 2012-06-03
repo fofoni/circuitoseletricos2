@@ -18,10 +18,11 @@
 
 using namespace std;
 
-#ifndef MYFUNCTIONS_H_
-#define MYFUNCTIONS_H_
+#ifndef		 MYFUNCTIONS_H_
+#define 	 MYFUNCTIONS_H_
 
 #define     FILE_IS_NOT_OPEN    1
+#define 	ARMA_DONT_USE_BLAS
 
 class tensionAndCurrentName : public map <int, string>{
 	public:
@@ -44,18 +45,18 @@ class element {
  		float	vref;
  	};
 
+class modifiedMatrix : public map<int, map<int, float> > {   /* line, columns, content */
+	public:
+		void solveMatrixSystem (int*, modifiedMatrix, modifiedMatrix);
+};
+
 class elementsList : public map<string, element*> {
     public:
 	   void	getElement (string, int);
 	   int numberOfNodes();
-	   void buildModifiedNodalMatrix ();
-	   string locateCurrent (int, int);
+	   void buildModifiedNodalMatrix (int*, modifiedMatrix, modifiedMatrix);
+	  /* string locateCurrent (int, int);*/
 
-};
-
-class modifiedMatrix : public map<int, map<int, float> > {   /* line, columns, content */
-	public:
-		void solveMatrixSystem ();
 };
 
 

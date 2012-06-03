@@ -16,7 +16,10 @@ int main (int argc, char *argv[]) {
 	ifstream myFile;
  	string line;
     elementsList list;
-    modifiedMatrix matrix;
+    modifiedMatrix matrix1; /* A */
+    modifiedMatrix matrix3; /* B */
+    int *matrixOrder;
+
 
     myFile.open (argv[1]);
 
@@ -65,9 +68,10 @@ int main (int argc, char *argv[]) {
  	}
  	myFile.close();
 
- 	list.buildModifiedNodalMatrix();
+ 	list.buildModifiedNodalMatrix(matrixOrder, matrix1, matrix3);
 
- 	matrix.solveMatrixSystem();
+ 	matrix1.solveMatrixSystem(matrixOrder, matrix1, matrix3);
+
 
  	cin.get();
  	return 0;

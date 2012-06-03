@@ -1,0 +1,10 @@
+Exception: STATUS_ACCESS_VIOLATION at eip=0040124D
+eax=20050000 ebx=00000000 ecx=FFFFFFFF edx=0028AA90 esi=2003A6D0 edi=6119FE7F
+ebp=0028A9E8 esp=0028A910 program=C:\Users\marcelle\Programacao\workspace\analiseDeCircuitos\Debug\analiseDeCircuitos.exe, pid 39952, thread main
+cs=0023 ds=002B es=002B fs=0053 gs=002B ss=002B
+Stack trace:
+Frame     Function  Args
+0028A9E8  0040124D  (0028AAA0, 0028AA90, 00000004, 00401911)
+0028ABF8  00401D9B  (00000002, 0028AC20, 200280E8, 2003A74A)
+0028ACF8  610070D8  (00000000, 0028CD78, 610066D0, 00000000)
+End of stack trace
