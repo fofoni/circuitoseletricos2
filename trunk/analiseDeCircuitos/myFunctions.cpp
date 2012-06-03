@@ -125,11 +125,8 @@ string elementsList::locateCurrent (int node1, int node2){
 }
 */
 
-void elementsList::buildModifiedNodalMatrix (){
+void elementsList::buildModifiedNodalMatrix (int *matrixOrder, modifiedMatrix matrix1, modifiedMatrix matrix3){
 
-	modifiedMatrix matrix1;
-	modifiedMatrix matrix2;
-	modifiedMatrix matrix3;
 	tensionAndCurrentName listToPrint;
 	int index = numberOfNodes();
 
@@ -153,11 +150,12 @@ void elementsList::buildModifiedNodalMatrix (){
 					        [(auxiliar->second)->originNodeOrPositiveOutputNode] += ( -1/((auxiliar->second)->value) );
 				break;
 			case 'E': /* Fonte de tensao controlada a tensao */
-					matrix1 [index]
-					        [(auxiliar->second)->originNodeOrPositiveOutputNode] += -1;
 
 					matrix1 [index]
-					[(auxiliar->second)->destinationNodeOrNegativeOutputNode] += 1;
+					          [(auxiliar->second)->originNodeOrPositiveOutputNode] += -1;
+
+					matrix1 [index]
+					         [(auxiliar->second)->destinationNodeOrNegativeOutputNode] += 1;
 
 					matrix1 [index]
 					[(auxiliar->second)->controledOriginNodeOrPositiveInputNode] += ((auxiliar->second)->value);
@@ -271,13 +269,50 @@ void elementsList::buildModifiedNodalMatrix (){
 		}
 	}
 
+	*matrixOrder = index;
+
 }
 
-void modifiedMatrix::solveMatrixSystem () {
 
 
+/**************************************************************************************************/
 
+
+/* Function responsable for solving the system A x = B */
+void modifiedMatrix::solveMatrixSystem (int * matrixOrder, modifiedMatrix matrix1, modifiedMatrix matrix3) {
+
+	int order = *matrixOrder;
+	int i, j;
+
+	float A[order][order];
+	float x[order];
+	float B[order];
+
+
+	/* Building Matrix A */
+	for (i=1; i == order; i++){
+	    	for (j=1; j == order; j++){
+	    		A[i][j] = 0;
+	    		A[i][j] += matrix1 [i][j];
+	    	}
 	}
+
+	/* Building Matrix B */
+	for (i=1; i== order; i++){
+		B[i] = 0;
+		B[i] += matrix3[i][0];
+	}
+
+
+	/* Solving system and finding x */
+
+
+}
+
+
+
+
+
 
 
 
