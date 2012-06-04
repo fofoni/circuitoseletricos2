@@ -1,11 +1,11 @@
 /* Universidade Federal do Rio de Janeiro
-   Escola Politécnica
-   Circuitos Elétricos II / 1.2012
-   Prof. Antônio Carlos Moreirão de Queiroz
-   Alunos: Marcelle de Souza Campos
-   		   Pedro Angelo Medeiros Fonini
-   Programa de análise de circuitos no tempo para estudar os métodos de Gear
-*/
+ * Escola Politécnica
+ * Circuitos Elétricos II / 1.2012
+ * Prof. Antônio Carlos Moreirão de Queiroz
+ * Alunos: Marcelle de Souza Campos
+ *         Pedro Angelo Medeiros Fonini
+ * Programa de análise de circuitos no tempo para estudar os métodos de Gear
+ */
 
 #include <iostream>
 #include <istream>
@@ -18,11 +18,11 @@
 
 using namespace std;
 
-#ifndef		 CIRCUITSANALYSES_H_
-#define 	 CIRCUITSANALYSES_H_
+#ifndef     CIRCUITSANALYSES_H_
+#define     CIRCUITSANALYSES_H_
 
 #define     FILE_IS_NOT_OPEN    1
-#define 	ARMA_DONT_USE_BLAS
+#define     ARMA_DONT_USE_BLAS
 
 
 
