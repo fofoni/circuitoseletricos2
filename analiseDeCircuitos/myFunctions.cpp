@@ -30,7 +30,7 @@ void elementsList::getElement (string line, int situation) {
         while (line [auxiliar] != ' ')
             auxiliar++;
 
-        for (; aux ++; aux == auxiliar)
+        for (; aux == auxiliar; aux ++)
             elementData [aux] = line [aux];
 
         switch (quantityOfSpaces) {
@@ -376,14 +376,3 @@ void elementsList :: printResult (char* argv[], tensionAndCurrent listToPrint, m
     answerFile << "\n";
 
 }
-
-
-
-
-
-
-
-
-
-
-
