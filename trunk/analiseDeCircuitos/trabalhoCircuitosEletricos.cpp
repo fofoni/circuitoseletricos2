@@ -20,48 +20,52 @@ int main (int argc, char *argv[]) {
     modifiedMatrix      matrix1; /* A */
     modifiedMatrix      matrix2; /* x */
     modifiedMatrix      matrix3; /* B */
-    int *matrixOrder;   /* Ponteiro que guarda a ordem que a matriz A possuira */
+    int *matrixOrder;   /* Ponteiro que guarda a ordem da matriz A */
 
+    if (argc < 2) {
+        cerr << "Usage:" << endl;
+        cerr << "  " << argv[0] << " <netlist file>" << endl;
+        return FILE_IS_NOT_OPEN;
+    }
 
     myFile.open (argv[1]);
 
     if (!(myFile.is_open())) {
-        cout << "Erro (" << errno << "): " << strerror (errno) << "." << endl;
+        cerr << "Erro (" << errno << "): " << /*strerror (errno) <<*/ "." << endl;
         exit (FILE_IS_NOT_OPEN);
     }
 
+    // pega o comentario
     getline(myFile, line);
+
     if (!myFile.good())
             cout << "Esse arquivo nao possui netlist" << endl;
 
-
     /* Durante a leitura do arquivo, os elementos assim como seus respectivos parametros sao guardados dentro da classe elementsList */
     while (myFile.good()) {
-
         getline(myFile, line);
+        cout << "Lida a linha [" << line << "]" << endl;
+        cout << "line[0] = " << line[0] << endl << endl;
         switch (line[0]){
-
             case 'R':
             case 'L':
             case 'C':
-                list.getElement (line, 1);
-                break;
+                list.getElement (line, 1); break;
             case 'E':
             case 'F':
             case 'G':
             case 'H':
             case 'O':
-                list.getElement (line, 2);
-                break;
+                list.getElement (line, 2); break;
             case 'N':
-                list.getElement (line, 3);
-                break;
+                list.getElement (line, 3); break;
             case '$':
-                list.getElement (line, 4);
-                break;
+                list.getElement (line, 4); break;
             case 'V':
             case 'I':
-                list.getElement (line, 5);
+                list.getElement (line, 5); break;
+            case '*':
+            case '#':
                 break;
             default:
                 cout << "Esse elemento " << line[0] << " nao esta implementado" << endl;
