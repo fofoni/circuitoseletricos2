@@ -35,7 +35,7 @@ class element {
         float   value;
         int     controledOriginNodeOrPositiveInputNode;
         int     controledDestinationNodeOrNegativeInputNode;
-        float   inicialConditions;
+        float   initialConditions;
         string  pairsOfValues;
         string  parameter;
         int     nocrtlPositive;
@@ -43,6 +43,8 @@ class element {
         float   gon;
         float   goff;
         float   vref;
+        void printMyself();
+        element();
     };
 
 /* Classe que vai conter as matrizes da analise modificada,
@@ -59,7 +61,7 @@ class tensionAndCurrent : public map <int, string>{
 
 /* Container cuja chave e o nome do elemento do circuito formada pela classe element */
 class elementsList : public map<string, element*> {
-    public:
+  public:
     void    getElement (string, int);
     int     numberOfNodes();
     void    buildModifiedNodalMatrix (int*, tensionAndCurrent, modifiedMatrix, modifiedMatrix);

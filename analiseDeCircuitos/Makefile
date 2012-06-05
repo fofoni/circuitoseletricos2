@@ -8,7 +8,9 @@
 
 CC = g++
 CFLAGS = -ansi -pedantic -Wall -Wextra
+
 CPP_FILES = myFunctions.cpp trabalhoCircuitosEletricos.cpp
+HEADERS = circuitsAnalyses.h
 
 TRABALHOCIRCUITOS = trabalhoCircuitosEletricos
 EXECS = $(TRABALHOCIRCUITOS)
@@ -16,7 +18,7 @@ EXECS = $(TRABALHOCIRCUITOS)
 
 ### Default target
 
-$(TRABALHOCIRCUITOS) : $(CPP_FILES)
+$(TRABALHOCIRCUITOS) : $(CPP_FILES) $(HEADERS)
 	$(CC) $(CFLAGS) -o $(TRABALHOCIRCUITOS) $(CPP_FILES)
 
 

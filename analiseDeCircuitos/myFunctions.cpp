@@ -11,6 +11,51 @@
 
 using namespace std;
 
+element::element () {
+    originNodeOrPositiveOutputNode              = -1;
+    destinationNodeOrNegativeOutputNode         = -1;
+    value                                       = -1;
+    controledOriginNodeOrPositiveInputNode      = -1;
+    controledDestinationNodeOrNegativeInputNode = -1;
+    initialConditions                           = -1;
+    pairsOfValues                               = "";
+    parameter                                   = "";
+    nocrtlPositive                              = -1;
+    nocrtlNegative                              = -1;
+    gon                                         = -1;
+    goff                                        = -1;
+    vref                                        = -1;
+}
+
+element::printMyself() {
+    cout << endl << "PRINTMYSELF()" << endl;
+    cout << "  originNodeOrPositiveOutputNode              = " <<
+            originNodeOrPositiveOutputNode << endl;
+    cout << "  destinationNodeOrNegativeOutputNode         = " <<
+            destinationNodeOrNegativeOutputNode << endl;
+    cout << "  value                                       = " <<
+            value << endl;
+    cout << "  controledOriginNodeOrPositiveInputNode      = " <<
+            controledOriginNodeOrPositiveInputNode << endl;
+    cout << "  controledDestinationNodeOrNegativeInputNode = " <<
+            controledDestinationNodeOrNegativeInputNode << endl;
+    cout << "  initialConditions                           = " <<
+            initialConditions << endl;
+    cout << "  pairsOfValues                               = [" <<
+            pairsOfValues << "]" << endl;
+    cout << "  parameter                                   = [" <<
+            parameter << "]" << endl;
+    cout << "  nocrtlPositive                              = " <<
+            nocrtlPositive << endl;
+    cout << "  nocrtlNegative                              = " <<
+            nocrtlNegative << endl;
+    cout << "  gon                                         = " <<
+            gon << endl;
+    cout << "  goff                                        = " <<
+            goff << endl;
+    cout << "  vref                                        = " <<
+            vref << endl;
+}
 
 /****************************************************************************/
 /* Funcao responsavel por, a partir da leitura individual de cada linha do
@@ -25,13 +70,24 @@ void elementsList::getElement (string line, int situation) {
     int quantityOfSpaces = 0;
     string elementData;
 
+    cout << endl << "INSIDE GETELEMENT" << endl << endl;
 
-    do{
+    do {
+        cout << "  auxiliar=" << auxiliar << "; aux=" << aux << "; qtySpc=" <<
+                quantityOfSpaces << "; elementData=[" << elementData << "];" <<
+                endl;
+        cout << "  while ( line[auxiliar] != ' ') auxiliar++;" << endl;
         while (line [auxiliar] != ' ')
             auxiliar++;
+        cout << "  auxiliar=" << auxiliar << "; aux=" << aux << "; qtySpc=" <<
+                quantityOfSpaces << "; elementData=[" << elementData << "];" <<
+                endl;
 
-        for (; aux == auxiliar; aux ++)
-            elementData [aux] = line [aux];
+        cout << "  elementData = line.substr(" << aux << ", " << (auxiliar-aux) << ");" << endl;
+        elementData = line.substr(aux, auxiliar-aux);
+        cout << "  auxiliar=" << auxiliar << "; aux=" << aux << "; qtySpc=" <<
+                quantityOfSpaces << "; elementData=[" << elementData << "];" <<
+                endl << endl;
 
         switch (quantityOfSpaces) {
             case 0:

@@ -3,4 +3,4 @@ IS 1 0 DC 0.001
 RL 1 0 1000
 
 # transiente, passo 1us, de 0 ate 1ms
-.TRAN .000001 GEAR 0
+.TRAN 0.000001 0.001 GEAR 0
