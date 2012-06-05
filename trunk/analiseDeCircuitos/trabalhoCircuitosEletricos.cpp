@@ -1,13 +1,13 @@
 /* Universidade Federal do Rio de Janeiro
- * Escola PolitÈcnica
- * Circuitos ElÈtricos II / 1.2012
- * Prof. AntÙnio Carlos Moreir„o de Queiroz
+ * Escola Polit√©cnica
+ * Circuitos El√©tricos II / 1.2012
+ * Prof. Ant√¥nio Carlos Moreir√£o de Queiroz
  * Alunos: Marcelle de Souza Campos
  *         Pedro Angelo Medeiros Fonini
- * Programa de an·lise de circuitos no tempo para estudar os mÈtodos de Gear
+ * Programa de an√°lise de circuitos no tempo para estudar os m√©todos de Gear
  */
 
-#include "circuitsAnalyses.h"
+#include "circuitAnalysis.h"
 
 using namespace std;
 
