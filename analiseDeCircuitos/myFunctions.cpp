@@ -1,13 +1,13 @@
 /* Universidade Federal do Rio de Janeiro
- * Escola PolitÈcnica
- * Circuitos ElÈtricos II / 1.2012
- * Prof. AntÙnio Carlos Moreir„o de Queiroz
+ * Escola Polit√©cnica
+ * Circuitos El√©tricos II / 1.2012
+ * Prof. Ant√¥nio Carlos Moreir√£o de Queiroz
  * Alunos: Marcelle de Souza Campos
  *         Pedro Angelo Medeiros Fonini
- * Programa de an·lise de circuitos no tempo para estudar os mÈtodos de Gear
+ * Programa de an√°lise de circuitos no tempo para estudar os m√©todos de Gear
  */
 
-#include "circuitsAnalyses.h"
+#include "circuitAnalysis.h"
 
 using namespace std;
 
@@ -27,7 +27,7 @@ element::element () {
     vref                                        = -1;
 }
 
-element::printMyself() {
+void element::printMyself() {
     cout << endl << "PRINTMYSELF()" << endl;
     cout << "  originNodeOrPositiveOutputNode              = " <<
             originNodeOrPositiveOutputNode << endl;
@@ -91,7 +91,7 @@ void elementsList::getElement (string line, int situation) {
 
         switch (quantityOfSpaces) {
             case 0:
-                /* Novo elemento È inserido ao objeto */
+                /* Novo elemento √© inserido ao objeto */
                 (*this)[elementData] = new element;
                 break;
             case 1:
@@ -122,7 +122,7 @@ void elementsList::getElement (string line, int situation) {
             case 4:
                 switch (situation){
                     case (1):
-                        ( (*this)[elementData] )->inicialConditions = atof (elementData.c_str());
+                        ( (*this)[elementData] )->initialConditions = atof (elementData.c_str());
                         break;
                     case (2):
                         ( (*this)[elementData] )->controledDestinationNodeOrNegativeInputNode = atoi (elementData.c_str());
@@ -157,7 +157,7 @@ void elementsList::getElement (string line, int situation) {
 }
 
 /****************************************************************************/
-/* FunÁ„o respons·vel em retornar a quantidade de nos que o circuito
+/* Fun√ß√£o respons√°vel em retornar a quantidade de nos que o circuito
  * analisado possui.
  */
 int elementsList::numberOfNodes() {
@@ -203,7 +203,7 @@ string elementsList::locateCurrent (int node1, int node2){
 void elementsList::buildModifiedNodalMatrix (int *matrixOrder, tensionAndCurrent listToPrint, modifiedMatrix matrix1, modifiedMatrix matrix3){
 
     /* O index inicialmente corresponde ao numero de nos do circuito. Ao longo
-     * da funcao, ele È incrementado cada vez que se faz necessario o calculo
+     * da funcao, ele √© incrementado cada vez que se faz necessario o calculo
      * de uma nova corrente no circuito. Ao final da funcao, seu valor
      * corresponde a ordem da matrix A
     */
