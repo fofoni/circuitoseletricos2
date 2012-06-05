@@ -45,7 +45,7 @@ int main (int argc, char *argv[]) {
     while (myFile.good()) {
         getline(myFile, line);
         cout << "Lida a linha [" << line << "]" << endl;
-        cout << "line[0] = " << line[0] << endl << endl;
+        cout << "line[0] = " << line[0] << endl;
         switch (line[0]){
             case 'R':
             case 'L':
@@ -63,7 +63,9 @@ int main (int argc, char *argv[]) {
                 list.getElement (line, 4); break;
             case 'V':
             case 'I':
-                list.getElement (line, 5); break;
+                cout << "Vamos pegar o element V/I." << endl;
+                list.getElement (line, 5);
+                cout << "Pegamos um V/I." << endl; break;
             case '*':
             case '#':
                 break;
