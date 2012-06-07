@@ -20,7 +20,16 @@ int main (int argc, char *argv[]) {
     modifiedMatrix      matrix1; /* A */
     modifiedMatrix      matrix2; /* x */
     modifiedMatrix      matrix3; /* B */
-    int *matrixOrder;   /* Ponteiro que guarda a ordem da matriz A */
+    int matrixOrder;   /* Ponteiro que guarda a ordem da matriz A */
+
+    float passo;
+    float tempo_final;
+    int gear_order;
+    int passos_internos;
+    int UIC = -1;
+
+    map<int, string> split_line;
+    int qty_of_words;
 
     if (argc < 2) {
         cerr << "Usage:" << endl;
@@ -45,37 +54,67 @@ int main (int argc, char *argv[]) {
     while (myFile.good()) {
         getline(myFile, line);
         cout << "Lida a linha [" << line << "]" << endl;
-        cout << "line[0] = " << line[0] << endl;
-        switch (line[0]){
-            case 'R':
-            case 'L':
-            case 'C':
-                list.getElement (line, 1); break;
-            case 'E':
-            case 'F':
-            case 'G':
-            case 'H':
-            case 'O':
-                list.getElement (line, 2); break;
-            case 'N':
-                list.getElement (line, 3); break;
-            case '$':
-                list.getElement (line, 4); break;
-            case 'V':
-            case 'I':
-                cout << "Vamos pegar o element V/I." << endl;
-                list.getElement (line, 5);
-                cout << "Pegamos um V/I." << endl; break;
-            case '*':
-            case '#':
-                break;
-            default:
-                cout << "Esse elemento " << line[0] << " nao esta implementado" << endl;
-                break;
+        if (line.size() == 0) continue;
+        switch (line[0]) {
+          case 'R': case 'L': case 'C':
+          case 'E': case 'F': case 'G': case 'H': case 'O':
+          case 'N': case '$':
+          case 'V': case 'I':
+            list.getElement (line); break;
+          case '.':
+            split_line = split(line, qty_of_words);
+            if (qty_of_words != 4 && qty_of_words != 5) {
+                cerr << ".TRAN <passo> <tempo final> GEAR[<n>] <passos internos> [UIC]" << endl;
+                exit(BAD_NETLIST);
+            }
+            if (split_line[0].compare(".TRAN") !=  0) {
+                cerr << "Simulacao '" << split_line[0] << "' nao reconhecida." << endl;
+                exit(BAD_NETLIST);
+            }
+            passo = atof(split_line[1].c_str());
+            tempo_final = atof(split_line[2].c_str());
+            if (split_line[3].size() < 4 ||
+                split_line[3].substr(0, 4).compare("GEAR") != 0) {
+                cerr << "Metodo '" << split_line[3] << "' nao reconhecido." << endl;
+                exit(BAD_NETLIST);
+            }
+            if (split_line[3].size() == 4) gear_order = 2;
+            else gear_order = atoi(split_line[3].substr(4).c_str());
+            if (gear_order < 1 || gear_order > 8) {
+                cerr << "A ordem do metodo de GEAR deve estar entre 1 e 8" << endl;
+                exit(BAD_NETLIST);
+            }
+            passos_internos = atoi(split_line[4].c_str());
+            if (qty_of_words == 4) UIC = 0;
+            else {
+                if (split_line[5].compare("UIC") != 0) {
+                    cerr << "Comando '" << split_line[5] << "' nao reconhecido." << endl;
+                    exit(BAD_NETLIST);
+                }
+                UIC = 1;
+            }
+          case '*': case '#': break; // comentarios
+          default:
+            cout << "Esse elemento " << line[0] << " nao esta implementado"
+                 << endl;
+            break;
         }
     }
 
     myFile.close();
+
+    cout << endl;
+
+    for (elementsList::iterator i = list.begin(); i != list.end(); i++) {
+        cout << i->first << ":";
+        (i->second)->printMyself();
+        cout << endl;
+    }
+
+    if (UIC == -1) {
+        cerr << "Nenhuma simulacao a ser feita." << endl;
+        exit(BAD_NETLIST);
+    }
 
     list.buildModifiedNodalMatrix(matrixOrder, listToPrint, matrix1, matrix3);
 
@@ -83,9 +122,9 @@ int main (int argc, char *argv[]) {
 
     list.printResult (argv, listToPrint, matrix2);
 
-
-
+#if !(defined(unix) || defined(__unix__) || defined(__unix))
     cin.get();
+#endif
 
     return 0;
 }

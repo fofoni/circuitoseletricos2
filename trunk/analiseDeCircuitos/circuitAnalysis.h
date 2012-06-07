@@ -13,6 +13,8 @@
 #include <cerrno>
 #include <string>
 #include <map>
+#include <vector>
+#include <sstream>
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -22,7 +24,12 @@ using namespace std;
 #define     CIRCUITSANALYSES_H_
 
 #define     FILE_IS_NOT_OPEN    1
+#define     BAD_NETLIST         2
 #define     ARMA_DONT_USE_BLAS
+
+#define     tensionAndCurrent   map <int, string>
+
+map<int, string> split(string str, int &i, char delim = ' ');
 
 /* Classe que possui os parametros de todos os
    possiveis elementos dentro de um netlist */
@@ -50,19 +57,19 @@ class element {
                                /* row, column, content */
 class modifiedMatrix : public map<int, map<int, float> > {
   public:
-    void solveMatrixSystem (int*, modifiedMatrix, modifiedMatrix, modifiedMatrix);
+    void solveMatrixSystem (int, modifiedMatrix, modifiedMatrix, modifiedMatrix);
+    void printMyself();
 };
 
-/* Classe que numera todas as variaveis do circuitos, sendo elas tensoes no nos e devidas correntes */
-class tensionAndCurrent : public map <int, string>{
-};
 
-/* Container cuja chave e o nome do elemento do circuito formada pela classe element */
+/* Container cuja chave e o nome do elemento do circuito
+   formada pela classe element */
 class elementsList : public map<string, element*> {
   public:
-    void    getElement (string, int);
+    void    getElement (string);
     int     numberOfNodes();
-    void    buildModifiedNodalMatrix (int*, tensionAndCurrent, modifiedMatrix, modifiedMatrix);
+    void    buildModifiedNodalMatrix (int&, tensionAndCurrent&,
+                                      modifiedMatrix&, modifiedMatrix&);
     void    printResult (char**, tensionAndCurrent, modifiedMatrix);
     /* string locateCurrent (int, int);*/
 
