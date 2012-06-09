@@ -45,6 +45,10 @@ cppmatrix cppmatrix::operator* (float factor) {
     return resultado;
 }
 
+cppmatrix& cppmatrix::operator[] (int) {
+    ;
+}
+
 /* funcoes para a resolucao do circuito */
 
 map<int, string> split(string str, int &i, char delim) {
@@ -59,6 +63,14 @@ map<int, string> split(string str, int &i, char delim) {
             break;
     }
     return result;
+}
+
+void cppmatrix::printMyself() {
+    for (int i=1; i<=n; i++) {
+        for (int j=1; j<=m; j++)
+            printf("% 6.6f ", matrix[i][j]);
+        cout << endl;
+    }
 }
 
 // construtor

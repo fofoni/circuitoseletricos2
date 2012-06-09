@@ -33,13 +33,18 @@ int main (int argc, char *argv[]) {
 
     {
         cppmatrix A(4,4); cppmatrix B(4,4); cppmatrix x(4,1);
-        A[1][1] =  1; A[1][2] =  1; A[1][3] =  1; A[1][4] =  1;
-        A[2][1] =  1; A[2][2] = -1; A[2][3] =  1; A[2][4] = -1;
-        A[3][1] =  1; A[3][2] =  1; A[3][3] = -1; A[3][4] = -1;
-        A[4][1] =  1; A[4][2] = -1; A[4][3] = -1; A[4][4] =  1;
+        A.matrix[1][1] =  1; A.matrix[1][2] =  1; A.matrix[1][3] =  1; A.matrix[1][4] =  1;
+        A.matrix[2][1] =  1; A.matrix[2][2] = -1; A.matrix[2][3] =  1; A.matrix[2][4] = -1;
+        A.matrix[3][1] =  1; A.matrix[3][2] =  1; A.matrix[3][3] = -1; A.matrix[3][4] = -1;
+        A.matrix[4][1] =  1; A.matrix[4][2] = -1; A.matrix[4][3] = -1; A.matrix[4][4] =  1;
         B = A*(-1);
-        x[1][1] =  1; x[2][1] =  1; x[3][1] =  2; x[4][1] =  3;
+        x.matrix[1][1] =  1; x.matrix[2][1] =  1; x.matrix[3][1] =  2; x.matrix[4][1] =  3;
+        // testa A, B, x
+        A.printMyself();
+        cout << endl;
+        B.printMyself();
         // testa B+A=2A, B-A=0, B*A=4Id, A*x=?
+        cin.get();
     }
 
     if (argc < 2) {
