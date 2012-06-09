@@ -57,7 +57,7 @@ class element {
                                /* row, column, content */
 class modifiedMatrix : public map<int, map<int, float> > {
   public:
-    void solveMatrixSystem (int, modifiedMatrix, modifiedMatrix, modifiedMatrix);
+    void solveMatrixSystem (int, modifiedMatrix, modifiedMatrix&, modifiedMatrix);
     void printMyself();
 };
 
@@ -77,12 +77,14 @@ class elementsList : public map<string, element*> {
 
 class cppmatrix {
   public:
-    map<int, map<int, float>> matrix;
+    map<int, map<int, float> > matrix;
     int n,m;
     cppmatrix (int, int);
     cppmatrix operator + (cppmatrix);
     cppmatrix operator * (cppmatrix);
     cppmatrix operator * (float);
+    cppmatrix& operator [] (int);
+    void printMyself();
 };
 
 #endif
