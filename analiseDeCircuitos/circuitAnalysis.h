@@ -75,4 +75,14 @@ class elementsList : public map<string, element*> {
 
 };
 
+class cppmatrix {
+  public:
+    map<int, map<int, float>> matrix;
+    int n,m;
+    cppmatrix (int, int);
+    cppmatrix operator + (cppmatrix);
+    cppmatrix operator * (cppmatrix);
+    cppmatrix operator * (float);
+};
+
 #endif

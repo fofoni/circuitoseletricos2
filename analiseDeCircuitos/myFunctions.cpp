@@ -11,6 +11,42 @@
 
 using namespace std;
 
+/* funcoes para manipulacao de matrizes */
+
+cppmatrix::cppmatrix (int rows, int columns) {
+    n=rows; m=columns;
+    for (int i = 1; i <= n; i++)
+        for (int j = 1; j <= m; j++)
+            matrix[i][j] = 0;
+}
+
+cppmatrix cppmatrix::operator+ (cppmatrix parcela) {
+    cppmatrix resultado(n,m);
+    for (int i = 1; i <= n; i++)
+        for (int j = 1; j <= m; j++)
+            resultado.matrix[i][j] = matrix[i][j] + parcela.matrix[i][j];
+    return resultado;
+}
+
+cppmatrix cppmatrix::operator* (cppmatrix fator) {
+    cppmatrix resultado(n,fator.m);
+    for (int i = 1; i <= n; i++)
+        for (int j = 1; j <= fator.m; j++)
+            for (int k = 1; k <= m; k++)
+                resultado.matrix[i][j] += matrix[i][k] + fator.matrix[k][j];
+    return resultado;
+}
+
+cppmatrix cppmatrix::operator* (float factor) {
+    cppmatrix resultado(n,m);
+    for (int i = 1; i <= n; i++)
+        for (int j = 1; j <= m; j++)
+            resultado.matrix[i][j] = factor * matrix[i][j];
+    return resultado;
+}
+
+/* funcoes para a resolucao do circuito */
+
 map<int, string> split(string str, int &i, char delim) {
     map<int, string> result;
     const char *cstr = str.c_str();
@@ -451,14 +487,14 @@ void elementsList::buildModifiedNodalMatrix
             if ((auxiliar->second)->originNodeOrPositiveOutputNode == 0) {
                 if ((auxiliar->second)->destinationNodeOrNegativeOutputNode == 0)
                     break;
-                matrix1 [(auxiliar->second)->destinationNodeOrNegativeOutputNode][0]
+                matrix3 [(auxiliar->second)->destinationNodeOrNegativeOutputNode][0]
                         += -(auxiliar->second->value);
                 break;
             }
             if ((auxiliar->second)->destinationNodeOrNegativeOutputNode == 0) {
                 if ((auxiliar->second)->originNodeOrPositiveOutputNode == 0)
                     break;
-                matrix1 [(auxiliar->second)->originNodeOrPositiveOutputNode][0]
+                matrix3 [(auxiliar->second)->originNodeOrPositiveOutputNode][0]
                         += (auxiliar->second->value);
                 break;
             }
@@ -490,10 +526,6 @@ void elementsList::buildModifiedNodalMatrix
 
     matrixOrder = index;
 
-    matrix1.printMyself();
-    cout << endl;
-    matrix3.printMyself();
-
 }
 
 
@@ -501,7 +533,7 @@ void elementsList::buildModifiedNodalMatrix
 /**************************************************************************************************/
 
 /* Funcao responsavel em resolver o sistema  A x = B */
-void modifiedMatrix::solveMatrixSystem (int order, modifiedMatrix matrix1, modifiedMatrix matrix2, modifiedMatrix matrix3) {
+void modifiedMatrix::solveMatrixSystem (int order, modifiedMatrix matrix1, modifiedMatrix& matrix2, modifiedMatrix matrix3) {
 
     int i, j;
 

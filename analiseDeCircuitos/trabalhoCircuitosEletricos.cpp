@@ -31,6 +31,17 @@ int main (int argc, char *argv[]) {
     map<int, string> split_line;
     int qty_of_words;
 
+    {
+        cppmatrix A(4,4); cppmatrix B(4,4); cppmatrix x(4,1);
+        A[1][1] =  1; A[1][2] =  1; A[1][3] =  1; A[1][4] =  1;
+        A[2][1] =  1; A[2][2] = -1; A[2][3] =  1; A[2][4] = -1;
+        A[3][1] =  1; A[3][2] =  1; A[3][3] = -1; A[3][4] = -1;
+        A[4][1] =  1; A[4][2] = -1; A[4][3] = -1; A[4][4] =  1;
+        B = A*(-1);
+        x[1][1] =  1; x[2][1] =  1; x[3][1] =  2; x[4][1] =  3;
+        // testa B+A=2A, B-A=0, B*A=4Id, A*x=?
+    }
+
     if (argc < 2) {
         cerr << "Usage:" << endl;
         cerr << "  " << argv[0] << " <netlist file>" << endl;
@@ -117,6 +128,10 @@ int main (int argc, char *argv[]) {
     }
 
     list.buildModifiedNodalMatrix(matrixOrder, listToPrint, matrix1, matrix3);
+
+    matrix1.printMyself();
+    cout << endl;
+    matrix3.printMyself();
 
     matrix1.solveMatrixSystem (matrixOrder, matrix1, matrix2, matrix3);
 
