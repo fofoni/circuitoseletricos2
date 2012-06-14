@@ -38,17 +38,17 @@ class element {
     public:
         int     originNodeOrPositiveOutputNode;
         int     destinationNodeOrNegativeOutputNode;
-        float   value;
+        double   value;
         int     controledOriginNodeOrPositiveInputNode;
         int     controledDestinationNodeOrNegativeInputNode;
-        float   initialConditions;
+        double   initialConditions;
         string  pairsOfValues;
         string  parameter;
         int     nocrtlPositive;
         int     nocrtlNegative;
-        float   gon;
-        float   goff;
-        float   vref;
+        double   gon;
+        double   goff;
+        double   vref;
         void    printMyself();
         element();
     };
@@ -56,7 +56,7 @@ class element {
 /* Classe que vai conter as matrizes da analise modificada,
    formada a partir das estampas dos elementos */
                                /* row, column, content */
-class modifiedMatrix : public map<int, map<int, float> > {
+class modifiedMatrix : public map<int, map<int, double> > {
   public:
     void solveMatrixSystem (int, modifiedMatrix, modifiedMatrix&, modifiedMatrix);
     void printMyself();
@@ -75,15 +75,15 @@ class elementsList : public map<string, element*> {
     /* string locateCurrent (int, int);*/
 };
 
-class cppmatrix : public map<int, map<int, float> > {
+class cppmatrix : public map<int, map<int, double> > {
   public:
     int n,m;
     cppmatrix operator + (cppmatrix);
     cppmatrix operator * (cppmatrix);
-    cppmatrix operator * (float);
+    cppmatrix operator * (double);
     cppmatrix t(); // transpose
     cppmatrix submatrix(int, int, int, int);
-    void subassign(cppmatrix);
+    void subassign(int,int, int,int, cppmatrix);
     void qr(cppmatrix& Q, cppmatrix& R);
     void printMyself();
     void initialize(int, int);
