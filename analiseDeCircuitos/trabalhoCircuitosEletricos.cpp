@@ -20,7 +20,7 @@ int main (int argc, char *argv[]) {
     modifiedMatrix      matrix1; /* A */
     modifiedMatrix      matrix2; /* x */
     modifiedMatrix      matrix3; /* B */
-    int matrixOrder;   /* Ponteiro que guarda a ordem da matriz A */
+    int matrixOrder;    /* Ponteiro que guarda a ordem da matriz A */
 
     float passo;
     float tempo_final;
@@ -32,18 +32,47 @@ int main (int argc, char *argv[]) {
     int qty_of_words;
 
     {
-        cppmatrix A(4,4); cppmatrix B(4,4); cppmatrix x(4,1);
-        A.matrix[1][1] =  1; A.matrix[1][2] =  1; A.matrix[1][3] =  1; A.matrix[1][4] =  1;
-        A.matrix[2][1] =  1; A.matrix[2][2] = -1; A.matrix[2][3] =  1; A.matrix[2][4] = -1;
-        A.matrix[3][1] =  1; A.matrix[3][2] =  1; A.matrix[3][3] = -1; A.matrix[3][4] = -1;
-        A.matrix[4][1] =  1; A.matrix[4][2] = -1; A.matrix[4][3] = -1; A.matrix[4][4] =  1;
-        B = A*(-1);
-        x.matrix[1][1] =  1; x.matrix[2][1] =  1; x.matrix[3][1] =  2; x.matrix[4][1] =  3;
-        // testa A, B, x
+        cppmatrix A; cppmatrix B; cppmatrix x; cppmatrix Q, R;
+        A.initialize(4,4);
+        B.initialize(4,4);
+        x.initialize(4,1);
+
+        /*A.printMyself();
+        cout << endl;
+        B.printMyself();
+        cout << endl;
+        x.printMyself();
+        cout << endl << endl;*/
+        A[1][1] = 10; A[1][2] =  2; A[1][3] =  3; A[1][4] =  3;
+        A[2][1] =  0; A[2][2] =100; A[2][3] =  4; A[2][4] =  2;
+        A[3][1] =  3; A[3][2] =  4; A[3][3] = 50; A[3][4] =  0;
+        A[4][1] = -1; A[4][2] =  8; A[4][3] =  6; A[4][4] = 20;
+        B = (A+A.t())*.5;
+        x[1][1] =  1; x[2][1] =  1; x[3][1] =  2; x[4][1] =  3;
+        B.qr(Q,R);
+        B.printMyself();
+        /*// testa A, B, x
         A.printMyself();
         cout << endl;
         B.printMyself();
-        // testa B+A=2A, B-A=0, B*A=4Id, A*x=?
+        /*cout << endl;
+        x.printMyself();
+        // testa B+A=0, A-B=2A, B*A=4Id, A*x=?
+        cout << endl << endl;
+        (B+A).printMyself();
+        cout << endl;
+        A.t().printMyself();
+        cout << endl;
+        x.t().printMyself();
+        cout << endl;
+        (x.t() * x).printMyself();
+        cout << endl;        cout << endl;
+        (A+B*(-1)).printMyself();
+        cout << endl;
+        (B*A).printMyself();
+        cout << endl;
+        (A*x).printMyself();
+        cout << endl;*/
         cin.get();
     }
 
@@ -66,7 +95,8 @@ int main (int argc, char *argv[]) {
     if (!myFile.good())
             cout << "Esse arquivo nao possui netlist" << endl;
 
-    /* Durante a leitura do arquivo, os elementos assim como seus respectivos parametros sao guardados dentro da classe elementsList */
+    /* Durante a leitura do arquivo, os elementos assim como seus respectivos
+      parametros sao guardados dentro da classe elementsList */
     while (myFile.good()) {
         getline(myFile, line);
         cout << "Lida a linha [" << line << "]" << endl;
