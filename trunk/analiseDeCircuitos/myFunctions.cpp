@@ -32,22 +32,14 @@ cppmatrix cppmatrix::operator+ (cppmatrix parcela) {
 cppmatrix cppmatrix::operator* (cppmatrix fator) {
     cppmatrix resultado;
     resultado.initialize(n, fator.m);
-    cout << endl;
     for (int i = 1; i <= n; i++)
-        for (int j = 1; j <= fator.m; j++) {
-            for (int k = 1; k <= m; k++) {
-                //cout << "resultado["<<i<<"]["<<j<<"] += (*this)["<<i<<"]["<<k<<
-                //"] * fator["<<k<<"]["<<j<<"] = "<<((*this)[i][k] * fator[k][j])<<";"<<endl;
+        for (int j = 1; j <= fator.m; j++)
+            for (int k = 1; k <= m; k++)
                 resultado[i][j] += (*this)[i][k] * fator[k][j];
-            }
-//             cout << "RESULTADO PARCIAL:" << endl;
-//             resultado.printMyself();
-//             cout << "END RESULTADO PARCIAL" << endl;
-        }
     return resultado;
 }
 
-cppmatrix cppmatrix::operator* (float factor) {
+cppmatrix cppmatrix::operator* (double factor) {
     cppmatrix resultado;
     resultado.initialize(n,m);
     for (int i = 1; i <= n; i++)
@@ -85,9 +77,9 @@ int sgn(T val, int zero=1) {
     return zero*(T(0) == val) + (T(0) < val) - (val < T(0));
 }
 
-void cppmatrix::subassign(i1,i2, j1,j2, cppmatrix A) {
+void cppmatrix::subassign(int i1, int i2, int j1, int j2, cppmatrix A) {
     for (int i=1; i<=i2-i1+1; i++)
-        for (int j=1; j<=i2-i1+1; j++)
+        for (int j=1; j<=j2-j1+1; j++)
             (*this)[i+i1-1][j+j1-1] = A[i][j];
 }
 
@@ -102,18 +94,25 @@ void cppmatrix::qr(cppmatrix& Q, cppmatrix& R) {
     /*Q.printMyself();
     cout << endl;
     R.printMyself();*/
-    for (int i=1; i<=n; j++) {
+    for (int i=1; i<=n; i++) {
         // Find H = I - 2*v*v'
         cppmatrix u = R.submatrix(i,n, i,i);
-        float normx = sqrt((u.t() * u)[1][1]);
-        u[1][1] = u[1][1] + sgn(R[i][i])*normx;
+        double normx = sqrt((u.t() * u)[1][1]);
+        cppmatrix H;
+        u[1][1] = u[1][1] - sgn(R[i][i])*normx;
         normx = sqrt((u.t() * u)[1][1]);
         if (normx == 0) continue;
         u = u*(1/normx);
-        R.subassign(i,n, i,n,
-                    R.submatrix(i,n, i,n) +
-                    ((u*u.t())*R.submatrix(i,n, i,n))*(-2));
+        H.make_id(n-i+1);
+        H = H + (u*u.t())*(-2);
+        // R := HR; Q := QH
+        R.subassign(i,n, i,n, H*R.submatrix(i,n, i,n));
+        Q.subassign(1,i-1, i,n, Q.submatrix(1,i-1, i,n)*H);
+        Q.subassign(i,n, i,n, H*Q.submatrix(i,n, i,n));
     }
+    for (int i=2; i<=n; i++)
+        for (int j=1; j<i; j++)
+            R[i][j] = 0;
 }
 
 /* funcoes para a resolucao do circuito */
@@ -135,7 +134,7 @@ map<int, string> split(string str, int &i, char delim) {
 void cppmatrix::printMyself() {
     for (int i=1; i<=n; i++) {
         for (int j=1; j<=m; j++)
-            printf("% 12.6f ", (*this)[i][j]);
+            printf("% 22.16f ", (*this)[i][j]);
         cout << endl;
     }
 }
@@ -190,7 +189,7 @@ void element::printMyself() {
 void modifiedMatrix::printMyself() {
     for (modifiedMatrix::iterator i = this->begin(); i != this->end(); i++) {
         cout << "LINHA " << i->first << ": ";
-        for (map<int, float>::iterator j = i->second.begin(); j != i->second.end(); j++) {
+        for (map<int, double>::iterator j = i->second.begin(); j != i->second.end(); j++) {
             cout << j->first << ":" << j->second << " ";
         }
         cout << endl;
@@ -617,17 +616,16 @@ void modifiedMatrix::solveMatrixSystem (int order, modifiedMatrix matrix1, modif
     int i, j;
 
     /* s/10/order/g */
-    float A[10][10];
-    float x[10];
-    float B[10];
+    double A[10][10];
+    double x[10];
+    double B[10];
 
-        /* Construindo a Matriz A */
-    for (i=1; i == order; i++){
-            for (j=1; j == order; j++){
-                A[i][j] = 0;
-                A[i][j] += matrix1 [i][j];
-            }
-    }
+    /* Construindo a Matriz A */
+    for (i=1; i == order; i++)
+        for (j=1; j == order; j++){
+            A[i][j] = 0;
+            A[i][j] += matrix1 [i][j];
+        }
 
     /* Construindo a Matriz B */
     for (i=1; i== order; i++){
