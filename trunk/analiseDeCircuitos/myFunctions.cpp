@@ -13,40 +13,107 @@ using namespace std;
 
 /* funcoes para manipulacao de matrizes */
 
-cppmatrix::cppmatrix (int rows, int columns) {
+void cppmatrix::initialize (int rows, int columns) {
     n=rows; m=columns;
     for (int i = 1; i <= n; i++)
         for (int j = 1; j <= m; j++)
-            matrix[i][j] = 0;
+            (*this)[i][j] = 0;
 }
 
 cppmatrix cppmatrix::operator+ (cppmatrix parcela) {
-    cppmatrix resultado(n,m);
+    cppmatrix resultado;
+    resultado.initialize(n,m);
     for (int i = 1; i <= n; i++)
         for (int j = 1; j <= m; j++)
-            resultado.matrix[i][j] = matrix[i][j] + parcela.matrix[i][j];
+            resultado[i][j] = (*this)[i][j] + parcela[i][j];
     return resultado;
 }
 
 cppmatrix cppmatrix::operator* (cppmatrix fator) {
-    cppmatrix resultado(n,fator.m);
+    cppmatrix resultado;
+    resultado.initialize(n, fator.m);
+    cout << endl;
     for (int i = 1; i <= n; i++)
-        for (int j = 1; j <= fator.m; j++)
-            for (int k = 1; k <= m; k++)
-                resultado.matrix[i][j] += matrix[i][k] + fator.matrix[k][j];
+        for (int j = 1; j <= fator.m; j++) {
+            for (int k = 1; k <= m; k++) {
+                //cout << "resultado["<<i<<"]["<<j<<"] += (*this)["<<i<<"]["<<k<<
+                //"] * fator["<<k<<"]["<<j<<"] = "<<((*this)[i][k] * fator[k][j])<<";"<<endl;
+                resultado[i][j] += (*this)[i][k] * fator[k][j];
+            }
+//             cout << "RESULTADO PARCIAL:" << endl;
+//             resultado.printMyself();
+//             cout << "END RESULTADO PARCIAL" << endl;
+        }
     return resultado;
 }
 
 cppmatrix cppmatrix::operator* (float factor) {
-    cppmatrix resultado(n,m);
+    cppmatrix resultado;
+    resultado.initialize(n,m);
     for (int i = 1; i <= n; i++)
         for (int j = 1; j <= m; j++)
-            resultado.matrix[i][j] = factor * matrix[i][j];
+            resultado[i][j] = factor * (*this)[i][j];
     return resultado;
 }
 
-cppmatrix& cppmatrix::operator[] (int) {
-    ;
+cppmatrix cppmatrix::t () {
+    cppmatrix resultado;
+    resultado.initialize(m,n);
+    for (int i = 1; i <= m; i++)
+        for (int j = 1; j <= n; j++)
+            resultado[i][j] = (*this)[j][i];
+    return resultado;
+}
+
+cppmatrix cppmatrix::submatrix (int i1, int i2, int j1, int j2) {
+    cppmatrix resultado;
+    resultado.initialize(i2-i1+1, j2-j1+1);
+    for (int i = 1; i <= i2-i1+1; i++)
+        for (int j = 1; j <= j2-j1+1; j++)
+            resultado[i][j] = (*this)[i+i1-1][j+j1-1];
+    return resultado;
+}
+
+void cppmatrix::make_id(int size) {
+    initialize(size, size);
+    for (int i=1; i<=size; i++)
+        (*this)[i][i] = 1;
+}
+
+template <typename T>
+int sgn(T val, int zero=1) {
+    return zero*(T(0) == val) + (T(0) < val) - (val < T(0));
+}
+
+void cppmatrix::subassign(i1,i2, j1,j2, cppmatrix A) {
+    for (int i=1; i<=i2-i1+1; i++)
+        for (int j=1; j<=i2-i1+1; j++)
+            (*this)[i+i1-1][j+j1-1] = A[i][j];
+}
+
+void cppmatrix::qr(cppmatrix& Q, cppmatrix& R) {
+    if (n != m) {
+        cerr << "ERRO: este algoritmo nao faz decomposicao QR"
+                " de matrizes nao-quadradas" << endl;
+        return;
+    }
+    Q.make_id(n);
+    R = *this;
+    /*Q.printMyself();
+    cout << endl;
+    R.printMyself();*/
+    for (int i=1; i<=n; j++) {
+        // Find H = I - 2*v*v'
+        cppmatrix u = R.submatrix(i,n, i,i);
+        float normx = sqrt((u.t() * u)[1][1]);
+        u[1][1] = u[1][1] + sgn(R[i][i])*normx;
+        normx = sqrt((u.t() * u)[1][1]);
+        if (normx == 0) continue;
+        u = u*(1/normx);
+        R.subassign(i,n, i,n,
+                    R.submatrix(i,n, i,n) +
+                    ((u*u.t())*R.submatrix(i,n, i,n))*(-2));
+    }
 }
 
 /* funcoes para a resolucao do circuito */
@@ -68,7 +135,7 @@ map<int, string> split(string str, int &i, char delim) {
 void cppmatrix::printMyself() {
     for (int i=1; i<=n; i++) {
         for (int j=1; j<=m; j++)
-            printf("% 6.6f ", matrix[i][j]);
+            printf("% 12.6f ", (*this)[i][j]);
         cout << endl;
     }
 }

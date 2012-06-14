@@ -17,6 +17,7 @@
 #include <sstream>
 #include <stdio.h>
 #include <stdlib.h>
+#include <math.h>
 
 using namespace std;
 
@@ -48,7 +49,7 @@ class element {
         float   gon;
         float   goff;
         float   vref;
-        void printMyself();
+        void    printMyself();
         element();
     };
 
@@ -72,19 +73,21 @@ class elementsList : public map<string, element*> {
                                       modifiedMatrix&, modifiedMatrix&);
     void    printResult (char**, tensionAndCurrent, modifiedMatrix);
     /* string locateCurrent (int, int);*/
-
 };
 
-class cppmatrix {
+class cppmatrix : public map<int, map<int, float> > {
   public:
-    map<int, map<int, float> > matrix;
     int n,m;
-    cppmatrix (int, int);
     cppmatrix operator + (cppmatrix);
     cppmatrix operator * (cppmatrix);
     cppmatrix operator * (float);
-    cppmatrix& operator [] (int);
+    cppmatrix t(); // transpose
+    cppmatrix submatrix(int, int, int, int);
+    void subassign(cppmatrix);
+    void qr(cppmatrix& Q, cppmatrix& R);
     void printMyself();
+    void initialize(int, int);
+    void make_id(int);
 };
 
 #endif
