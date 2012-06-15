@@ -39,7 +39,7 @@ cppmatrix cppmatrix::operator* (cppmatrix fator) {
     return resultado;
 }
 
-cppmatrix cppmatrix::operator* (double factor) {
+cppmatrix cppmatrix::operator* (long double factor) {
     cppmatrix resultado;
     resultado.initialize(n,m);
     for (int i = 1; i <= n; i++)
@@ -91,26 +91,27 @@ void cppmatrix::qr(cppmatrix& Q, cppmatrix& R) {
     }
     Q.make_id(n);
     R = *this;
-    /*Q.printMyself();
-    cout << endl;
-    R.printMyself();*/
     for (int i=1; i<=n; i++) {
         // Find H = I - 2*v*v'
         cppmatrix u = R.submatrix(i,n, i,i);
-        double normx = sqrt((u.t() * u)[1][1]);
+        long double normx = sqrt((u.t() * u)[1][1]);
         cppmatrix H;
-        u[1][1] = u[1][1] - sgn(R[i][i])*normx;
+        u[1][1] = u[1][1] + sgn(R[i][i])*normx;
         normx = sqrt((u.t() * u)[1][1]);
-        if (normx == 0) continue;
+        if (normx == 0) {
+            cerr << "WARNING: Sistema singular." << endl;
+            continue;
+        }
         u = u*(1/normx);
         H.make_id(n-i+1);
         H = H + (u*u.t())*(-2);
         // R := HR; Q := QH
-        R.subassign(i,n, i,n, H*R.submatrix(i,n, i,n));
-        Q.subassign(1,i-1, i,n, Q.submatrix(1,i-1, i,n)*H);
-        Q.subassign(i,n, i,n, H*Q.submatrix(i,n, i,n));
+        R.subassign(i,n, i,n, R.submatrix(i,n, i,n) +
+                              ((u*u.t())*(-2))*R.submatrix(i,n, i,n));
+        Q.subassign(1,n, i,n, Q.submatrix(1,n, i,n) +
+                              Q.submatrix(1,n, i,n)*((u*u.t())*(-2)));
     }
-    for (int i=2; i<=n; i++)
+    for (int i=2; i<n; i++)
         for (int j=1; j<i; j++)
             R[i][j] = 0;
 }
@@ -134,7 +135,7 @@ map<int, string> split(string str, int &i, char delim) {
 void cppmatrix::printMyself() {
     for (int i=1; i<=n; i++) {
         for (int j=1; j<=m; j++)
-            printf("% 22.16f ", (*this)[i][j]);
+            printf("% 22.16Lf ", (*this)[i][j]);
         cout << endl;
     }
 }
@@ -189,7 +190,7 @@ void element::printMyself() {
 void modifiedMatrix::printMyself() {
     for (modifiedMatrix::iterator i = this->begin(); i != this->end(); i++) {
         cout << "LINHA " << i->first << ": ";
-        for (map<int, double>::iterator j = i->second.begin(); j != i->second.end(); j++) {
+        for (map<int, long double>::iterator j = i->second.begin(); j != i->second.end(); j++) {
             cout << j->first << ":" << j->second << " ";
         }
         cout << endl;
@@ -616,9 +617,9 @@ void modifiedMatrix::solveMatrixSystem (int order, modifiedMatrix matrix1, modif
     int i, j;
 
     /* s/10/order/g */
-    double A[10][10];
-    double x[10];
-    double B[10];
+    long double A[10][10];
+    long double x[10];
+    long double B[10];
 
     /* Construindo a Matriz A */
     for (i=1; i == order; i++)
