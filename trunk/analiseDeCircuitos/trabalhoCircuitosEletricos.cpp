@@ -32,10 +32,10 @@ int main (int argc, char *argv[]) {
     int qty_of_words;
 
     {
-        cppmatrix A; cppmatrix B; cppmatrix x; cppmatrix Q, R;
+        cppmatrix A; cppmatrix B; cppmatrix b;
         A.initialize(4,4);
         B.initialize(4,4);
-        x.initialize(4,1);
+        b.initialize(4,1);
 
         /*A.printMyself();
         cout << endl;
@@ -48,16 +48,16 @@ int main (int argc, char *argv[]) {
         A[3][1] =  3; A[3][2] =  4; A[3][3] = 50; A[3][4] =  0;
         A[4][1] = -1; A[4][2] =  8; A[4][3] =  6; A[4][4] = 20;
         B = (A+A.t())*.5;
-        x[1][1] =  1; x[2][1] =  1; x[3][1] =  2; x[4][1] =  3;
-        B.qr(Q,R);
-        cout << "B = [ ";
+        b[1][1] =  1; b[2][1] =  1; b[3][1] =  2; b[4][1] =  3;
+        B.solve(b);
+        /*cout << "B = [ ";
         B.printMyself();
         cout << "]; RC = [";
         R.printMyself();
         cout << "]; QC = [";
         Q.printMyself();
         cout << "];" << endl;
-        /*// testa A, B, x
+        /* // testa A, B, x
         A.printMyself();
         cout << endl;
         B.printMyself();

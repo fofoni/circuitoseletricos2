@@ -83,19 +83,21 @@ void cppmatrix::subassign(int i1, int i2, int j1, int j2, cppmatrix A) {
             (*this)[i+i1-1][j+j1-1] = A[i][j];
 }
 
-void cppmatrix::qr(cppmatrix& Q, cppmatrix& R) {
+// Solves (for the vector x) the system Ax=b, with A = *this
+// Equivalent to octave/matlab's A\b
+cppmatrix cppmatrix::solve(cppmatrix b) {
     if (n != m) {
         cerr << "ERRO: este algoritmo nao faz decomposicao QR"
                 " de matrizes nao-quadradas" << endl;
-        return;
+        exit(NON_SQUARE_MATRIX_QR);
     }
-    Q.make_id(n);
-    R = *this;
+    cppmatrix R = *this;
+    cppmatrix x;
+    x.initialize(n,1);
     for (int i=1; i<=n; i++) {
         // Find H = I - 2*v*v'
         cppmatrix u = R.submatrix(i,n, i,i);
         long double normx = sqrt((u.t() * u)[1][1]);
-        cppmatrix H;
         u[1][1] = u[1][1] + sgn(R[i][i])*normx;
         normx = sqrt((u.t() * u)[1][1]);
         if (normx == 0) {
@@ -103,17 +105,27 @@ void cppmatrix::qr(cppmatrix& Q, cppmatrix& R) {
             continue;
         }
         u = u*(1/normx);
-        H.make_id(n-i+1);
-        H = H + (u*u.t())*(-2);
-        // R := HR; Q := QH
+        // R := HR; b := Hb
         R.subassign(i,n, i,n, R.submatrix(i,n, i,n) +
                               ((u*u.t())*(-2))*R.submatrix(i,n, i,n));
-        Q.subassign(1,n, i,n, Q.submatrix(1,n, i,n) +
-                              Q.submatrix(1,n, i,n)*((u*u.t())*(-2)));
+        b.subassign(i,n, 1,1, b.submatrix(i,n, 1,1) +
+                              ((u*u.t())*(-2))*b.submatrix(i,n, 1,1));
     }
-    for (int i=2; i<n; i++)
-        for (int j=1; j<i; j++)
-            R[i][j] = 0;
+    cout << "RC = ["; R.printMyself(); cout << "];";
+    cout << "b = ["; b.printMyself(); cout << "];" << endl;
+    for (int i=n; i>=1; i--) {
+        if (R[i][i] == 0) {
+            cerr << "ERRO: Sistema singular." << endl;
+            exit(SINGULAR_LINEAR_SYSTEM);
+        }
+        x[i][1] = b[i][1] - (R.submatrix(i,i, i+1,n)*x.submatrix(i+1,n, 1,1))[1][1] ;
+        x[i][1] = x[i][1] / R[i][i];
+    }
+    cout << "xC = ["; x.printMyself(); cout << "];" << endl;
+    return b;
+//     for (int i=2; i<n; i++)
+//         for (int j=1; j<i; j++)
+//             R[i][j] = 0;
 }
 
 /* funcoes para a resolucao do circuito */
