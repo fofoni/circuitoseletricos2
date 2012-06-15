@@ -24,9 +24,10 @@ using namespace std;
 #ifndef     CIRCUITSANALYSES_H_
 #define     CIRCUITSANALYSES_H_
 
-#define     FILE_IS_NOT_OPEN    1
-#define     BAD_NETLIST         2
-#define     ARMA_DONT_USE_BLAS
+#define     FILE_IS_NOT_OPEN        1
+#define     BAD_NETLIST             2
+#define     NON_SQUARE_MATRIX_QR    3
+#define     SINGULAR_LINEAR_SYSTEM  4
 
 #define     tensionAndCurrent   map <int, string>
 
@@ -63,7 +64,7 @@ class modifiedMatrix : public map<int, map<int, long double> > {
 };
 
 
-/* Container cuja chave e o nome do elemento do circuito
+/* Container cuja chave é o nome do elemento do circuito
    formada pela classe element */
 class elementsList : public map<string, element*> {
   public:
@@ -84,7 +85,7 @@ class cppmatrix : public map<int, map<int, long double> > {
     cppmatrix t(); // transpose
     cppmatrix submatrix(int, int, int, int);
     void subassign(int,int, int,int, cppmatrix);
-    void qr(cppmatrix& Q, cppmatrix& R);
+    cppmatrix solve(cppmatrix b);
     void printMyself();
     void initialize(int, int);
     void make_id(int);
