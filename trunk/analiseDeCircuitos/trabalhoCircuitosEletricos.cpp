@@ -22,8 +22,8 @@ int main (int argc, char *argv[]) {
     modifiedMatrix      matrix3; /* B */
     int matrixOrder;    /* Ponteiro que guarda a ordem da matriz A */
 
-    double passo;
-    double tempo_final;
+    long double passo;
+    long double tempo_final;
     int gear_order;
     int passos_internos;
     int UIC = -1;
@@ -50,9 +50,13 @@ int main (int argc, char *argv[]) {
         B = (A+A.t())*.5;
         x[1][1] =  1; x[2][1] =  1; x[3][1] =  2; x[4][1] =  3;
         B.qr(Q,R);
+        cout << "B = [ ";
+        B.printMyself();
+        cout << "]; RC = [";
         R.printMyself();
-        cout << endl;
+        cout << "]; QC = [";
         Q.printMyself();
+        cout << "];" << endl;
         /*// testa A, B, x
         A.printMyself();
         cout << endl;
