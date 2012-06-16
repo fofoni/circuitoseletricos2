@@ -85,7 +85,7 @@ void cppmatrix::subassign(int i1, int i2, int j1, int j2, cppmatrix A) {
 
 // Solves (for the vector x) the system Ax=b, with A = *this
 // Equivalent to octave/matlab's A\b
-cppmatrix cppmatrix::solve(cppmatrix b) {
+cppmatrix cppmatrix::solveMatrixSystem(cppmatrix b) {
     if (n != m) {
         cerr << "ERRO: este algoritmo nao faz decomposicao QR"
                 " de matrizes nao-quadradas" << endl;
@@ -123,9 +123,20 @@ cppmatrix cppmatrix::solve(cppmatrix b) {
     }
     cout << "xC = ["; x.printMyself(); cout << "];" << endl;
     return b;
-//     for (int i=2; i<n; i++)
-//         for (int j=1; j<i; j++)
-//             R[i][j] = 0;
+}
+
+void cppmatrix::fill_out_with_zeros(int rows, int cols) {
+    n = rows;
+    m = cols;
+    for (int i=1; i<=n; i++) {
+        if (this->count(i) == 0) // if this row is empty, then...
+            for (int j=1; j<=m; j++)
+                (*this)[i][j] = 0;
+        else
+            for (int j=1; j<=m; j++)
+                if ( ((*this)[i]).count(j) == 0 )
+                    (*this)[i][j] = 0;
+    }
 }
 
 /* funcoes para a resolucao do circuito */
@@ -197,16 +208,6 @@ void element::printMyself() {
             goff << endl;
     cout << "  vref                                        = " <<
             vref << endl;
-}
-
-void modifiedMatrix::printMyself() {
-    for (modifiedMatrix::iterator i = this->begin(); i != this->end(); i++) {
-        cout << "LINHA " << i->first << ": ";
-        for (map<int, long double>::iterator j = i->second.begin(); j != i->second.end(); j++) {
-            cout << j->first << ":" << j->second << " ";
-        }
-        cout << endl;
-    }
 }
 
 /****************************************************************************/
@@ -411,12 +412,11 @@ string elementsList::locateCurrent (int node1, int node2){
 /* Funcao responsavel em, a partir da identificacao de cada elemento
  * pertencente ao objeto list, construir sua respectica estampa e soma-la as
  * matrizes da analise nodal modificada. As matrizes serao os objetos matrix1
- * e matrix3, que pertencem a classe modifiedMatrix e representam,
+ * e matrix3, que pertencem a classe cppmatrix e representam,
  * respectivamente, as matrizes A e B do sistema A x = B.
  */
 void elementsList::buildModifiedNodalMatrix
-  (int& matrixOrder, tensionAndCurrent& listToPrint,
-   modifiedMatrix& matrix1, modifiedMatrix& matrix3) {
+    (tensionAndCurrent& listToPrint, cppmatrix& matrix1, cppmatrix& matrix3) {
 
     /* O index inicialmente corresponde ao numero de nos do circuito. Ao longo
      * da funcao, ele é incrementado cada vez que se faz necessario o calculo
@@ -615,51 +615,18 @@ void elementsList::buildModifiedNodalMatrix
         }
     }
 
-    matrixOrder = index;
+    // preenche com zeros as entradas da matriz que nao foram usadas
+    // (sabendo que a ordem eh `index')
+    matrix3.fill_out_with_zeros(index, index);
 
-}
+    matrix1.fill_out_with_zeros(index, 1);
 
-
-
-/**************************************************************************************************/
-
-/* Funcao responsavel em resolver o sistema  A x = B */
-void modifiedMatrix::solveMatrixSystem (int order, modifiedMatrix matrix1, modifiedMatrix& matrix2, modifiedMatrix matrix3) {
-
-    int i, j;
-
-    /* s/10/order/g */
-    long double A[10][10];
-    long double x[10];
-    long double B[10];
-
-    /* Construindo a Matriz A */
-    for (i=1; i == order; i++)
-        for (j=1; j == order; j++){
-            A[i][j] = 0;
-            A[i][j] += matrix1 [i][j];
-        }
-
-    /* Construindo a Matriz B */
-    for (i=1; i== order; i++){
-        B[i] = 0;
-        B[i] += matrix3[i][0];
-    }
-
-
-    /* Resolvendo o sistema e achando x */
-
-
-    /* Copiando a matriz x para matrix2 */
-    for (i=1; i== order; i++){
-        matrix2[i][0] = x[i];
-        }
 }
 
 /****************************************************************************************************/
 
 /* Funcao responsavel em imprimir o resultado em um arquivo */
-void elementsList :: printResult (char* argv[], tensionAndCurrent listToPrint, modifiedMatrix matrix2) {
+void elementsList :: printResult (char* argv[], tensionAndCurrent listToPrint, cppmatrix matrix2) {
 
     map <int, string> :: iterator list;
     ofstream answerFile;
