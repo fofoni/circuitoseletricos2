@@ -111,8 +111,8 @@ cppmatrix cppmatrix::solveMatrixSystem(cppmatrix b) {
         b.subassign(i,n, 1,1, b.submatrix(i,n, 1,1) +
                               ((u*u.t())*(-2))*b.submatrix(i,n, 1,1));
     }
-    cout << "RC = ["; R.printMyself(); cout << "];";
-    cout << "b = ["; b.printMyself(); cout << "];" << endl;
+    // The system is now triangular, we go on to finding the solution
+    // by back-substitution
     for (int i=n; i>=1; i--) {
         if (R[i][i] == 0) {
             cerr << "ERRO: Sistema singular." << endl;
@@ -121,8 +121,7 @@ cppmatrix cppmatrix::solveMatrixSystem(cppmatrix b) {
         x[i][1] = b[i][1] - (R.submatrix(i,i, i+1,n)*x.submatrix(i+1,n, 1,1))[1][1] ;
         x[i][1] = x[i][1] / R[i][i];
     }
-    cout << "xC = ["; x.printMyself(); cout << "];" << endl;
-    return b;
+    return x;
 }
 
 void cppmatrix::fill_out_with_zeros(int rows, int cols) {
