@@ -57,25 +57,6 @@ class element {
 /* Classe que vai conter as matrizes da analise modificada,
    formada a partir das estampas dos elementos */
                                /* row, column, content */
-class modifiedMatrix : public map<int, map<int, long double> > {
-  public:
-    void solveMatrixSystem (int, modifiedMatrix, modifiedMatrix&, modifiedMatrix);
-    void printMyself();
-};
-
-
-/* Container cuja chave é o nome do elemento do circuito
-   formada pela classe element */
-class elementsList : public map<string, element*> {
-  public:
-    void    getElement (string);
-    int     numberOfNodes();
-    void    buildModifiedNodalMatrix (int&, tensionAndCurrent&,
-                                      modifiedMatrix&, modifiedMatrix&);
-    void    printResult (char**, tensionAndCurrent, modifiedMatrix);
-    /* string locateCurrent (int, int);*/
-};
-
 class cppmatrix : public map<int, map<int, long double> > {
   public:
     int n,m;
@@ -85,10 +66,24 @@ class cppmatrix : public map<int, map<int, long double> > {
     cppmatrix t(); // transpose
     cppmatrix submatrix(int, int, int, int);
     void subassign(int,int, int,int, cppmatrix);
-    cppmatrix solve(cppmatrix b);
+    cppmatrix solveMatrixSystem(cppmatrix);
     void printMyself();
     void initialize(int, int);
     void make_id(int);
+    void fill_out_with_zeros(int, int);
+};
+
+
+/* Container cuja chave é o nome do elemento do circuito
+   formada pela classe element */
+class elementsList : public map<string, element*> {
+  public:
+    void    getElement (string);
+    int     numberOfNodes();
+    void    buildModifiedNodalMatrix (tensionAndCurrent&,
+                                      cppmatrix&, cppmatrix&);
+    void    printResult (char**, tensionAndCurrent, cppmatrix);
+    /* string locateCurrent (int, int);*/
 };
 
 #endif
