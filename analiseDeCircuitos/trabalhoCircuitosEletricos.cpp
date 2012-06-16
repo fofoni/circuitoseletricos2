@@ -147,11 +147,14 @@ int main (int argc, char *argv[]) {
     matrix1.printMyself();
     cout << endl;
     matrix3.printMyself();
-
-    return 0;
+    cout << endl;
 
     //matrix1.solveMatrixSystem (matrixOrder, matrix1, matrix2, matrix3);
     matrix2 = matrix1.solveMatrixSystem(matrix3);
+
+    matrix2.printMyself();
+
+    return 0;
 
     list.printResult (argv, listToPrint, matrix2);
 
