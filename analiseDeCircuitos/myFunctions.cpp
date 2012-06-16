@@ -425,13 +425,16 @@ void elementsList::buildModifiedNodalMatrix
     */
     int index = numberOfNodes();
 
-    cout << "index: " << index << endl;
-
     stringstream node;
 
     map <string, element *> :: iterator auxiliar;
 
-    for (auxiliar = this->begin(), index++; auxiliar != this->end(); auxiliar++) {
+    /**
+    *** PERGUNTAR PRA MARCELLE POR QUE QUE TEM ESSE index++ AQUI
+    *** (QUE TA COMENTADO AGORA, POIS TAVA DANDO ERRADO COM ELE)
+    *** acho que era pra acrescentar o nó de "terra" (mas nao precisa)
+    **/
+    for (auxiliar = this->begin()/*, index++*/; auxiliar != this->end(); auxiliar++) {
 
         /* While responsavel pela construcao da estampa dos elementos */
         switch (auxiliar->first[0]) {
@@ -578,20 +581,20 @@ void elementsList::buildModifiedNodalMatrix
             if ((auxiliar->second)->originNodeOrPositiveOutputNode == 0) {
                 if ((auxiliar->second)->destinationNodeOrNegativeOutputNode == 0)
                     break;
-                matrix3 [(auxiliar->second)->destinationNodeOrNegativeOutputNode][0]
+                matrix3 [(auxiliar->second)->destinationNodeOrNegativeOutputNode][1]
                         += -(auxiliar->second->value);
                 break;
             }
             if ((auxiliar->second)->destinationNodeOrNegativeOutputNode == 0) {
                 if ((auxiliar->second)->originNodeOrPositiveOutputNode == 0)
                     break;
-                matrix3 [(auxiliar->second)->originNodeOrPositiveOutputNode][0]
+                matrix3 [(auxiliar->second)->originNodeOrPositiveOutputNode][1]
                         += (auxiliar->second->value);
                 break;
             }
-            matrix3 [(auxiliar->second)->originNodeOrPositiveOutputNode][0]
+            matrix3 [(auxiliar->second)->originNodeOrPositiveOutputNode][1]
                     += ((auxiliar->second)->value);
-            matrix3 [(auxiliar->second)->destinationNodeOrNegativeOutputNode][0]
+            matrix3 [(auxiliar->second)->destinationNodeOrNegativeOutputNode][1]
                     += -((auxiliar->second)->value);
             break;
           case 'V': /*Fonte de tensao */
@@ -617,9 +620,8 @@ void elementsList::buildModifiedNodalMatrix
 
     // preenche com zeros as entradas da matriz que nao foram usadas
     // (sabendo que a ordem eh `index')
-    matrix3.fill_out_with_zeros(index, index);
-
-    matrix1.fill_out_with_zeros(index, 1);
+    matrix1.fill_out_with_zeros(index, index);
+    matrix3.fill_out_with_zeros(index, 1);
 
 }
 

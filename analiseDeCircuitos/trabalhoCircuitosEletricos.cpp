@@ -161,17 +161,3 @@ int main (int argc, char *argv[]) {
 
     return 0;
 }
-
-/*
-
-function media = norma_media(m, sqrtN=1000)
-    s = 0;
-    for j = 1:sqrtN
-        for i = 1:sqrtN
-            s += norm(randn(m,m))/sqrtN;
-        end
-    end
-    media = s/sqrtN
-end
-
-*/
