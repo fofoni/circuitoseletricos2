@@ -50,6 +50,8 @@ class element {
         long double   gon;
         long double   goff;
         long double   vref;
+        long double   reactiveValue;
+        long double   impedance;
         void    printMyself();
         element();
     };
@@ -73,15 +75,24 @@ class cppmatrix : public map<int, map<int, long double> > {
     void fill_out_with_zeros(int, int);
 };
 
+/* Classe que contem os valores das correntes anteriores dos indutores e das tensoes
+ * anteriores dos capacitores
+ */
 
-/* Container cuja chave é o nome do elemento do circuito
+class capacitor_inductor : public map<string, long double [8]> {
+};
+
+
+/* Container cuja chave eh o nome do elemento do circuito
    formada pela classe element */
 class elementsList : public map<string, element*> {
   public:
     void    getElement (string);
     int     numberOfNodes();
+    void	gearMethod (iterator, capacitor_inductor, long double, int, int);
     void    buildModifiedNodalMatrix (tensionAndCurrent&,
-                                      cppmatrix&, cppmatrix&);
+                                      cppmatrix&, cppmatrix&,
+                                      capacitor_inductor, long double, int, int);
     void    printResult (char**, tensionAndCurrent, cppmatrix);
     /* string locateCurrent (int, int);*/
 };
