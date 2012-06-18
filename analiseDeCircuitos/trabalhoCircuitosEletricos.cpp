@@ -20,6 +20,7 @@ int main (int argc, char *argv[]) {
     cppmatrix           matrix1; /* A */
     cppmatrix           matrix2; /* x */
     cppmatrix           matrix3; /* B */
+    capacitor_inductor  reactiveElements;
 
     long double passo;
     long double tempo_final;
@@ -142,7 +143,7 @@ int main (int argc, char *argv[]) {
         exit(BAD_NETLIST);
     }
 
-    list.buildModifiedNodalMatrix(listToPrint, matrix1, matrix3);
+    list.buildModifiedNodalMatrix(listToPrint, matrix1, matrix3, reactiveElements, passo, gear_order, UIC);
 
     matrix1.printMyself();
     cout << endl;
