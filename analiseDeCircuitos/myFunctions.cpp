@@ -616,54 +616,54 @@ void elementsList::buildModifiedNodalMatrix
           case 'L': case 'C': /* indutor e capacitor*/
         	  this->gearMethod (auxiliar, reactiveElements, passo, gear_order, UIC);
         	  if ((auxiliar->second)->originNodeOrPositiveOutputNode == 0) {
-        	                if ((auxiliar->second)->destinationNodeOrNegativeOutputNode == 0)
-        	                    break;
-        	                matrix1 [(auxiliar->second)->destinationNodeOrNegativeOutputNode]
-        	                        [(auxiliar->second)->destinationNodeOrNegativeOutputNode]
-        	                        += 1/((auxiliar->second)->impedance) ;
-        	                break;
-        	            }
+        	       if ((auxiliar->second)->destinationNodeOrNegativeOutputNode == 0)
+        	       break;
+        	       matrix1 [(auxiliar->second)->destinationNodeOrNegativeOutputNode]
+        	               [(auxiliar->second)->destinationNodeOrNegativeOutputNode]
+        	               += 1/((auxiliar->second)->impedance) ;
+        	       break;
+        	  }
         	  if ((auxiliar->second)->destinationNodeOrNegativeOutputNode == 0) {
-        	                if ((auxiliar->second)->originNodeOrPositiveOutputNode == 0)
-        	                    break;
-        	                matrix1 [(auxiliar->second)->originNodeOrPositiveOutputNode]
-        	                        [(auxiliar->second)->originNodeOrPositiveOutputNode]
-        	                        += 1/((auxiliar->second)->impedance) ;
-        	                break;
-        	            }
-        	            matrix1 [(auxiliar->second)->originNodeOrPositiveOutputNode]
-        	                    [(auxiliar->second)->originNodeOrPositiveOutputNode]
-        	                    += 1/((auxiliar->second)->impedance) ;
+        	      if ((auxiliar->second)->originNodeOrPositiveOutputNode == 0)
+        	      break;
+        	      matrix1 [(auxiliar->second)->originNodeOrPositiveOutputNode]
+        	      [(auxiliar->second)->originNodeOrPositiveOutputNode]
+        	      += 1/((auxiliar->second)->impedance) ;
+        	      break;
+        	  }
+        	  matrix1 [(auxiliar->second)->originNodeOrPositiveOutputNode]
+        	          [(auxiliar->second)->originNodeOrPositiveOutputNode]
+        	          += 1/((auxiliar->second)->impedance) ;
 
-        	            matrix1 [(auxiliar->second)->destinationNodeOrNegativeOutputNode]
-        	                    [(auxiliar->second)->destinationNodeOrNegativeOutputNode]
-        	                    += 1/((auxiliar->second)->impedance) ;
+        	  matrix1 [(auxiliar->second)->destinationNodeOrNegativeOutputNode]
+        	          [(auxiliar->second)->destinationNodeOrNegativeOutputNode]
+        	          += 1/((auxiliar->second)->impedance) ;
 
-        	            matrix1 [(auxiliar->second)->originNodeOrPositiveOutputNode]
-        	                    [(auxiliar->second)->destinationNodeOrNegativeOutputNode]
-        	                    += -1/((auxiliar->second)->impedance) ;
+        	  matrix1 [(auxiliar->second)->originNodeOrPositiveOutputNode]
+        	          [(auxiliar->second)->destinationNodeOrNegativeOutputNode]
+        	          += -1/((auxiliar->second)->impedance) ;
 
-        	            matrix1 [(auxiliar->second)->destinationNodeOrNegativeOutputNode]
-        	                    [(auxiliar->second)->originNodeOrPositiveOutputNode]
-        	                    += -1/((auxiliar->second)->impedance) ;
-        	            if ((auxiliar->second)->originNodeOrPositiveOutputNode == 0) {
-        	                           if ((auxiliar->second)->destinationNodeOrNegativeOutputNode == 0)
-        	                               break;
-        	                           matrix3 [(auxiliar->second)->destinationNodeOrNegativeOutputNode][1]
-        	                                   += -(auxiliar->second->reactiveValue);
-        	                           break;
-        	                       }
-        	                       if ((auxiliar->second)->destinationNodeOrNegativeOutputNode == 0) {
-        	                           if ((auxiliar->second)->originNodeOrPositiveOutputNode == 0)
-        	                               break;
-        	                           matrix3 [(auxiliar->second)->originNodeOrPositiveOutputNode][1]
-        	                                   += (auxiliar->second->reactiveValue);
-        	                           break;
-        	                       }
-        	                       matrix3 [(auxiliar->second)->originNodeOrPositiveOutputNode][1]
-        	                               += ((auxiliar->second)->reactiveValue);
-        	                       matrix3 [(auxiliar->second)->destinationNodeOrNegativeOutputNode][1]
-        	                               += -((auxiliar->second)->reactiveValue);
+        	  matrix1 [(auxiliar->second)->destinationNodeOrNegativeOutputNode]
+        	          [(auxiliar->second)->originNodeOrPositiveOutputNode]
+        	          += -1/((auxiliar->second)->impedance) ;
+        	  if ((auxiliar->second)->originNodeOrPositiveOutputNode == 0) {
+        	       if ((auxiliar->second)->destinationNodeOrNegativeOutputNode == 0)
+        	       break;
+        	       matrix3 [(auxiliar->second)->destinationNodeOrNegativeOutputNode][1]
+        	               += -(auxiliar->second->reactiveValue);
+        	       break;
+        	  }
+        	  if ((auxiliar->second)->destinationNodeOrNegativeOutputNode == 0) {
+        	       if ((auxiliar->second)->originNodeOrPositiveOutputNode == 0)
+        	       break;
+        	       matrix3 [(auxiliar->second)->originNodeOrPositiveOutputNode][1]
+        	               += (auxiliar->second->reactiveValue);
+        	       break;
+        	  }
+        	  matrix3 [(auxiliar->second)->originNodeOrPositiveOutputNode][1]
+        	          += ((auxiliar->second)->reactiveValue);
+        	  matrix3 [(auxiliar->second)->destinationNodeOrNegativeOutputNode][1]
+        	          += -((auxiliar->second)->reactiveValue);
             break;
         }
     }
@@ -682,20 +682,20 @@ void elementsList :: gearMethod (iterator elementPosition, capacitor_inductor re
 								 long double passo, int gear_order, int UIC) {
 
 	map <string, element *> :: iterator auxiliar = elementPosition;
-	map <string, long double[8]> :: iterator element = reactiveElements.begin();
+	map <string, long double[10]> :: iterator element = reactiveElements.begin();
 
-	long double matrixA[gear_order][gear_order], matrixB[gear_order], matrixC[gear_order];
+	cppmatrix matrixA, matrixB, matrixC;
     long double fontValue = 0;
 
 	for (int i=0; i <8; i++){
-		matrixC[i] = 0;
+		matrixC[i][0] = 0;
 		for (int j=0; j<8; j++){
 			matrixA[i][j] = 0;
 		}
 	}
 
 	for (int i=0; i == gear_order; i++){
-		matrixC [i] = 1;
+		matrixC [i][0] = 1;
 		for (int j=0; j < gear_order; j++){
 			matrixA [i][j]= (-j)^(gear_order);
 		}
@@ -705,10 +705,12 @@ void elementsList :: gearMethod (iterator elementPosition, capacitor_inductor re
 	while (auxiliar->first != element->first)
 		element++;
 
-	for (int i=0; i < gear_order; i++)
-		fontValue+= matrixB[i] * element->second[i];
+	matrixB = matrixA.solveMatrixSystem(matrixC);
 
-	auxiliar->second->impedance =  matrixB[gear_order] * passo * 1/(auxiliar->second->value);
+	for (int i=0; i < gear_order; i++)
+		fontValue+= matrixB[i][0] * element->second[i];
+
+	auxiliar->second->impedance =  matrixB[gear_order][0] * passo * 1/(auxiliar->second->value);
 
 	if (auxiliar->first[0] == 'L' )
 		auxiliar->second->reactiveValue = fontValue;

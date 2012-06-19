@@ -31,6 +31,9 @@ int main (int argc, char *argv[]) {
     map<int, string> split_line;
     int qty_of_words;
 
+    map<string, element*> :: iterator element = list.begin();
+    map <string, long double[8]> :: iterator capacitorInductor = reactiveElements.begin();
+
     /* // coisas pra testar as funcoes:
     {
         cppmatrix A; cppmatrix B; cppmatrix b;
@@ -143,12 +146,47 @@ int main (int argc, char *argv[]) {
         exit(BAD_NETLIST);
     }
 
-    list.buildModifiedNodalMatrix(listToPrint, matrix1, matrix3, reactiveElements, passo, gear_order, UIC);
+   /* list.buildModifiedNodalMatrix(listToPrint, matrix1, matrix3, reactiveElements, passo, gear_order, UIC);
 
     matrix1.printMyself();
     cout << endl;
     matrix3.printMyself();
     cout << endl;
+    */
+
+
+    while (element != list.end() ){
+		capacitorInductor->first = element-> first;
+		capacitorInductor->second[8] = element->second->originNodeOrPositiveOutputNode;
+		capacitorInductor->second[9] = element->second->destinationNodeOrNegativeOutputNode;
+    	if (UIC && (element->first[0] == 'L' || element->first[0] == "C" ))
+    		capacitorInductor->second[0] = element->second->initialConditions;
+    	else
+    		capacitorInductor->second[0] = 0;
+    	element++;
+    }
+
+    for (long double i = 0 ; i < (tempo_final * (passos_internos + 1) )/ passo; i++ ){
+    	list.buildModifiedNodalMatrix(listToPrint, matrix1, matrix3, reactiveElements, passo, gear_order, UIC);
+    	matrix2 = matrix1.solveMatrixSystem(matrix3);
+    	list.printResult (argv, listToPrint, matrix2);
+    	if ( i < 9 ){
+    		for (capacitorInductor = reactiveElements.begin();
+    			 capacitorInductor != list.end();
+    			 capacitorInductor ++){
+
+    			if (element->first == capacitorInductor->first){
+    			    capacitorInductor->second[i] = capacitorInductor->second[i-1];
+    			    capacitorInductor->second[i-1]=element->second->initialConditions;
+    			}
+    		}
+    }
+
+
+
+
+
+
 
     //matrix1.solveMatrixSystem (matrixOrder, matrix1, matrix2, matrix3);
     matrix2 = matrix1.solveMatrixSystem(matrix3);
