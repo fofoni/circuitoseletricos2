@@ -122,8 +122,9 @@ int main (int argc, char *argv[]) {
                     exit(BAD_NETLIST);
                 }
                 UIC = 1;
+
             }
-          case '*': case '#': break; // comentarios
+          case '*': case '#': break; // comentarios da netlist
           default:
             cout << "Esse elemento " << split_line[0] << " nao esta implementado."
                  << endl;
@@ -156,10 +157,7 @@ int main (int argc, char *argv[]) {
 
 
     while (element != list.end() ){
-		capacitorInductor->first = element-> first;
-		capacitorInductor->second[8] = element->second->originNodeOrPositiveOutputNode;
-		capacitorInductor->second[9] = element->second->destinationNodeOrNegativeOutputNode;
-    	if (UIC && (element->first[0] == 'L' || element->first[0] == "C" ))
+    	if (UIC)
     		capacitorInductor->second[0] = element->second->initialConditions;
     	else
     		capacitorInductor->second[0] = 0;
@@ -170,31 +168,25 @@ int main (int argc, char *argv[]) {
     	list.buildModifiedNodalMatrix(listToPrint, matrix1, matrix3, reactiveElements, passo, gear_order, UIC);
     	matrix2 = matrix1.solveMatrixSystem(matrix3);
     	list.printResult (argv, listToPrint, matrix2);
-    	if ( i < 9 ){
-    		for (capacitorInductor = reactiveElements.begin();
-    			 capacitorInductor != list.end();
-    			 capacitorInductor ++){
+    	for (capacitorInductor = reactiveElements.begin();
+    		 capacitorInductor != list.end();
+   			 capacitorInductor ++){
 
-    			 capacitorInductor->second[i] = capacitorInductor->second[i-1];
-    			 capacitorInductor->second[i-1]= matrix2[capacitorInductor->second[8]] - matrix2[capacitorInductor->second[9]];
-    		}
-    	}
+   			 capacitorInductor->second[i] = capacitorInductor->second[i-1];
+   			 capacitorInductor->second[i-1]= matrix2[capacitorInductor->second[8]] - matrix2[capacitorInductor->second[9]];
+   		}
+
     }
 
 
-
-
-
-
-
     //matrix1.solveMatrixSystem (matrixOrder, matrix1, matrix2, matrix3);
-    matrix2 = matrix1.solveMatrixSystem(matrix3);
+    //matrix2 = matrix1.solveMatrixSystem(matrix3);
 
-    matrix2.printMyself();
+    //matrix2.printMyself();
 
     return 0;
 
-    list.printResult (argv, listToPrint, matrix2);
+    //list.printResult (argv, listToPrint, matrix2);
 
 #if !(defined(unix) || defined(__unix__) || defined(__unix))
     cin.get();
