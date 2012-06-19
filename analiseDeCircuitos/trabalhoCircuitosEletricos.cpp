@@ -175,11 +175,10 @@ int main (int argc, char *argv[]) {
     			 capacitorInductor != list.end();
     			 capacitorInductor ++){
 
-    			if (element->first == capacitorInductor->first){
-    			    capacitorInductor->second[i] = capacitorInductor->second[i-1];
-    			    capacitorInductor->second[i-1]=element->second->initialConditions;
-    			}
+    			 capacitorInductor->second[i] = capacitorInductor->second[i-1];
+    			 capacitorInductor->second[i-1]= matrix2[capacitorInductor->second[8]] - matrix2[capacitorInductor->second[9]];
     		}
+    	}
     }
 
 
