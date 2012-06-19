@@ -76,10 +76,10 @@ class cppmatrix : public map<int, map<int, long double> > {
 };
 
 /* Classe que contem os valores das correntes anteriores dos indutores e das tensoes
- * anteriores dos capacitores nas 8 primeiras posicoes e nas 2 ultimas posicoes contem
- * os nos de origem e destino, respectivamente do elemento
+ * anteriores dos capacitores nas 8 primeiras posicoes. Nas 2 ultimas posicoes contem
+ * os nos de origem e destino dos capacitores e na penultima posicao o valor da linha
+ * na qual a corrente dos indutors encontra-se.
  */
-
 class capacitor_inductor : public map<string, long double [10]> {
 };
 
