@@ -164,14 +164,14 @@ int main (int argc, char *argv[]) {
     string header = "           t";
     for (int i = 1; i <= list.numberOfNodes(); i++) {
         char new_str[13];
-        sprintf(new_str, "%12d", i);
+        sprintf(new_str, " %11d", i);
         header = header + new_str;
     }
     cout << header << endl;
     cout << "          --";
     for (int i = 1; i <= list.numberOfNodes(); i++) {
         char new_str[13];
-        sprintf(new_str, "% 12.4Lg", matrix2[i][1]);
+        sprintf(new_str, " % 11.4Lg", matrix2[i][1]);
         cout << new_str;
     }
     cout << endl;
