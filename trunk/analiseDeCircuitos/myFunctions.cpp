@@ -245,7 +245,7 @@ void elementsList::getElement (string line) {
         }
         (*this)[elementName]->originNodeOrPositiveOutputNode = atoi (split_line[1].c_str());
         (*this)[elementName]->destinationNodeOrNegativeOutputNode = atoi (split_line[2].c_str());
-        (*this)[elementName]->value = atoi (split_line[3].c_str());
+        (*this)[elementName]->value = strtold (split_line[3].c_str(), NULL);
         break;
 
       case 'I':
@@ -261,7 +261,7 @@ void elementsList::getElement (string line) {
                 cerr << "I<nome> <no+> <no-> DC <valor>" << endl;
                 exit(BAD_NETLIST);
             }
-            (*this)[elementName]->value = atof(split_line[4].c_str());
+            (*this)[elementName]->value = strtold(split_line[4].c_str(), NULL);
         }
         else if (split_line[3].compare("SIN") == 0) {
             cerr << "NAO TEM FONTE SENOIDAL AINDA" << endl;
@@ -407,7 +407,7 @@ string elementsList::locateCurrent (int node1, int node2){
 }
 */
 
-/***************************************************************************************************/
+/******************************************************************************/
 /* Funcao responsavel em, a partir da identificacao de cada elemento
  * pertencente ao objeto list, construir sua respectica estampa e soma-la as
  * matrizes da analise nodal modificada. As matrizes serao os objetos matrix1
@@ -416,7 +416,8 @@ string elementsList::locateCurrent (int node1, int node2){
  */
 void elementsList::buildModifiedNodalMatrix
     (tensionAndCurrent& listToPrint, cppmatrix& matrix1, cppmatrix& matrix3,
-    capacitor_inductor reactiveElements, long double passo, int gear_order, int UIC) {
+    capacitor_inductor reactiveElements, long double passo, int gear_order,
+    int UIC) {
 
     /* O index inicialmente corresponde ao numero de nos do circuito. Ao longo
      * da funcao, ele é incrementado cada vez que se faz necessario o calculo
@@ -428,7 +429,7 @@ void elementsList::buildModifiedNodalMatrix
     stringstream node;
 
     map <string, element *> :: iterator auxiliar;
-    map <string, long double[8]> :: iterator capacitorInductor = reactiveElements.begin();
+    capacitor_inductor :: iterator capacitorInductor = reactiveElements.begin();
 
     /**
     *** PERGUNTAR PRA MARCELLE POR QUE QUE TEM ESSE index++ AQUI
@@ -615,7 +616,7 @@ void elementsList::buildModifiedNodalMatrix
             index++;
             break;
           case 'L': case 'C': /* indutor e capacitor*/
-        	  capacitorInductor->first = auxiliar ->first;
+        	  /*capacitorInductor->first = auxiliar ->first; // essa linha ta dando erro
         	  this->gearMethod (auxiliar, reactiveElements, passo, gear_order, UIC);
         	  if ((auxiliar->second)->originNodeOrPositiveOutputNode == 0) {
         	       if ((auxiliar->second)->destinationNodeOrNegativeOutputNode == 0)
@@ -669,7 +670,6 @@ void elementsList::buildModifiedNodalMatrix
         	               += ((auxiliar->second)->reactiveValue);
         	      matrix3 [(auxiliar->second)->destinationNodeOrNegativeOutputNode][1]
         	               += -((auxiliar->second)->reactiveValue);
-                  break;
         	  }
 
         	  else{
@@ -691,8 +691,9 @@ void elementsList::buildModifiedNodalMatrix
 
         		  listToPrint[index] = 'j' + (auxiliar->first);
         		  index++;
+        	  }*/
+
         	  break;
-        	  }
         }
     }
 

@@ -32,7 +32,7 @@ int main (int argc, char *argv[]) {
     int qty_of_words;
 
     map<string, element*> :: iterator element = list.begin();
-    map <string, long double[8]> :: iterator capacitorInductor = reactiveElements.begin();
+    capacitor_inductor :: iterator capacitorInductor = reactiveElements.begin();
 
     /* // coisas pra testar as funcoes:
     {
@@ -80,7 +80,7 @@ int main (int argc, char *argv[]) {
             cout << "Esse arquivo nao possui netlist" << endl;
 
     /* Durante a leitura do arquivo, os elementos assim como seus respectivos
-      parametros sao guardados dentro da classe elementsList */
+      parametros sao guardados dentro da variável "list" */
     while (myFile.good()) {
         getline(myFile, line);
         cout << "Lida a linha [" << line << "]" << endl;
@@ -147,24 +147,44 @@ int main (int argc, char *argv[]) {
         exit(BAD_NETLIST);
     }
 
-   /* list.buildModifiedNodalMatrix(listToPrint, matrix1, matrix3, reactiveElements, passo, gear_order, UIC);
+    list.buildModifiedNodalMatrix(listToPrint, matrix1, matrix3,
+                                  reactiveElements, passo, gear_order, UIC);
 
     matrix1.printMyself();
     cout << endl;
     matrix3.printMyself();
     cout << endl;
-    */
 
+    matrix2 = matrix1.solveMatrixSystem(matrix3);
 
-    while (element != list.end() ){
+    matrix2.printMyself();
+
+    cout << endl;
+
+    string header = "           t";
+    for (int i = 1; i <= list.numberOfNodes(); i++) {
+        char new_str[13];
+        sprintf(new_str, "%12d", i);
+        header = header + new_str;
+    }
+    cout << header << endl;
+    cout << "          --";
+    for (int i = 1; i <= list.numberOfNodes(); i++) {
+        char new_str[13];
+        sprintf(new_str, "% 12.4Lg", matrix2[i][1]);
+        cout << new_str;
+    }
+    cout << endl;
+
+    /*while (element != list.end() ){
     	if (UIC)
     		capacitorInductor->second[0] = element->second->initialConditions;
     	else
     		capacitorInductor->second[0] = 0;
     	element++;
-    }
+    }*/
 
-    for (long double i = 0 ; i < (tempo_final * (passos_internos + 1) )/ passo; i++ ){
+    /*for (long double i = 0 ; i < (tempo_final * (passos_internos + 1) )/ passo; i++ ){
     	list.buildModifiedNodalMatrix(listToPrint, matrix1, matrix3, reactiveElements, passo, gear_order, UIC);
     	matrix2 = matrix1.solveMatrixSystem(matrix3);
     	list.printResult (argv, listToPrint, matrix2);
@@ -176,13 +196,7 @@ int main (int argc, char *argv[]) {
    			 capacitorInductor->second[i-1]= matrix2[capacitorInductor->second[8]] - matrix2[capacitorInductor->second[9]];
    		}
 
-    }
-
-
-    //matrix1.solveMatrixSystem (matrixOrder, matrix1, matrix2, matrix3);
-    //matrix2 = matrix1.solveMatrixSystem(matrix3);
-
-    //matrix2.printMyself();
+    }*/
 
     return 0;
 
