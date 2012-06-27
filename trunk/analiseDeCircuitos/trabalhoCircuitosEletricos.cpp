@@ -29,7 +29,6 @@ int main (int argc, char *argv[]) {
     int UIC = -1;
 
     map<int, string> split_line;
-    int qty_of_words;
 
     map<string, element*> :: iterator element = list.begin();
     capacitor_inductor :: iterator capacitorInductor = reactiveElements.begin();
@@ -82,6 +81,7 @@ int main (int argc, char *argv[]) {
     /* Durante a leitura do arquivo, os elementos assim como seus respectivos
       parametros sao guardados dentro da variável "list" */
     while (myFile.good()) {
+        int qty_of_words;
         getline(myFile, line);
         cout << "Lida a linha [" << line << "]" << endl;
         if (line.size() == 0) continue;
@@ -167,9 +167,14 @@ int main (int argc, char *argv[]) {
         sprintf(new_str, " %11d", i);
         header = header + new_str;
     }
+    for (int i = list.numberOfNodes()+1; i <= matrix1.n; i++) {
+        char new_str[13];
+        sprintf(new_str, " %11s", listToPrint[i].c_str());
+        header = header + new_str;
+    }
     cout << header << endl;
-    cout << "          --";
-    for (int i = 1; i <= list.numberOfNodes(); i++) {
+    cout << "      (bias)";
+    for (int i = 1; i <= matrix1.n; i++) {
         char new_str[13];
         sprintf(new_str, " % 11.4Lg", matrix2[i][1]);
         cout << new_str;
