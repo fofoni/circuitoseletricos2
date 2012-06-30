@@ -33,32 +33,6 @@ int main (int argc, char *argv[]) {
     map<string, element*> :: iterator element = list.begin();
     capacitor_inductor :: iterator capacitorInductor = reactiveElements.begin();
 
-    /* // coisas pra testar as funcoes:
-    {
-        cppmatrix A; cppmatrix B; cppmatrix b;
-        A.initialize(4,4);
-        b.initialize(4,1);
-
-        A[1][1] = -12.78376391436733; A[1][2] = -8.08457973326789; A[1][3] = -1.08775891434418; A[1][4] = 9.70269659982691;
-        A[2][1] =  -3.44936862205591; A[2][2] = 14.62951658126516; A[2][3] = -2.78872381570951; A[2][4] = 9.02562571827599;
-        A[3][1] =  13.82450984933543; A[3][2] =  3.52830401914780; A[3][3] = 13.83591578750285; A[3][4] = 4.37974936399216;
-        A[4][1] =  -5.34168532856833; A[4][2] =  5.03890307218638; A[4][3] =  4.59360560778174; A[4][4] = 4.99031594666725;
-        b[1][1] =  -9.63642294769349; b[2][1] = 11.09251263328027; b[3][1] =  7.71853527401042; b[4][1] = 7.03641375842988;
-        A.printMyself();
-        A.solveMatrixSystem(b);
-
-        cout << endl << endl << endl << "    =========" << endl << endl << endl;
-
-        B[2][3] = 5;
-        B[3][4] = -8;
-        B[2][1] = .5;
-        B.fill_out_with_zeros(5,4);
-        B.printMyself();
-
-        return 0;
-    }
-    */
-
     if (argc < 2) {
         cerr << "Usage:" << endl;
         cerr << "  " << argv[0] << " <netlist file>" << endl;
@@ -126,8 +100,9 @@ int main (int argc, char *argv[]) {
             }
           case '*': case '#': break; // comentarios da netlist
           default:
-            cout << "Esse elemento " << split_line[0] << " nao esta implementado."
+            cerr << "Esse elemento " << split_line[0] << " nao esta implementado."
                  << endl;
+            exit(BAD_NETLIST);
             break;
         }
     }
@@ -136,11 +111,11 @@ int main (int argc, char *argv[]) {
 
     cout << endl;
 
-    for (elementsList::iterator i = list.begin(); i != list.end(); i++) {
-        cout << i->first << ":";
-        (i->second)->printMyself();
-        cout << endl;
-    }
+//     for (elementsList::iterator i = list.begin(); i != list.end(); i++) {
+//         cout << i->first << ":";
+//         (i->second)->printMyself();
+//         cout << endl;
+//     }
 
     if (UIC == -1) {
         cerr << "Nenhuma simulacao a ser feita." << endl;

@@ -9,6 +9,16 @@
 
 #include "circuitAnalysis.h"
 
+#define GET_STRING(ch) (                                                    \
+    (ch=='E') ? ("E<nome> <nóV+> <nóV-> <nóv+> <nóv-> <Av>") : (            \
+    (ch=='F') ? ("F<nome> <nóI+> <nóI-> <nói+> <nói-> <Ai>") : (            \
+    (ch=='G') ? ("G<nome> <nóI+> <nóI-> <nóv+> <nóv-> <Gm>") : (            \
+    (ch=='H') ? ("H<nome> <nóV+> <nóV-> <nói+> <nói-> <Rm>") :              \
+    "Unknown error.")))                                                     \
+)
+
+/// VERIFICAR ESTAMPA DO A_I E FAZER ELE
+
 using namespace std;
 
 /* funcoes para manipulacao de matrizes */
@@ -228,7 +238,9 @@ void elementsList::getElement (string line) {
 
       case 'R':
         if (qty_of_args != 3) {
-            cerr << "R<nome> <no1> <no2> <resistencia>" << endl;
+            cerr << "Erro na leitura do arquivo."
+                 << " Maneira correta de especificar um resistor:"
+                 << endl << "R<nome> <no1> <no2> <resistencia>" << endl;
             exit(BAD_NETLIST);
         }
         (*this)[elementName]->originNodeOrPositiveOutputNode = atoi (split_line[1].c_str());
@@ -236,9 +248,13 @@ void elementsList::getElement (string line) {
         (*this)[elementName]->value = strtold (split_line[3].c_str(), NULL);
         break;
 
+      case 'E':
+      case 'F':
       case 'G':
         if (qty_of_args != 5) {
-            cerr << "G<nome> <nóI+> <nóI-> <nóv+> <nóv-> <Gm>" << endl;
+            cerr << "Erro na leitura do arquivo."
+                 << " Maneira correta de especificar a fonte controlada:"
+                 << endl << GET_STRING(elementName[0]) << endl;
             exit(BAD_NETLIST);
         }
         (*this)[elementName]->originNodeOrPositiveOutputNode = atoi (split_line[1].c_str());
@@ -251,7 +267,10 @@ void elementsList::getElement (string line) {
       case 'I':
       case 'V':
         if (qty_of_args < 3) {
-            cerr << elementName[0] << "<nome> <no+> <no-> <parametros>" << endl;
+            cerr << "Erro na leitura do arquivo."
+                 << " Maneira correta de especificar a fonte independente:"
+                 << endl << elementName[0] << "<nome> <no+> <no-> <parametros>"
+                 << endl;
             exit(BAD_NETLIST);
         }
         (*this)[elementName]->originNodeOrPositiveOutputNode = atoi (split_line[1].c_str());
@@ -335,7 +354,7 @@ string elementsList::locateCurrent (int node1, int node2){
 */
 
 /******************************************************************************/
-/* Funcao responsavel em, a partir da identificacao de cada elemento
+/* Funcao responsavel por, a partir da identificacao de cada elemento
  * pertencente ao objeto list, construir sua respectica estampa e soma-la as
  * matrizes da analise nodal modificada. As matrizes serao os objetos matrix1
  * e matrix3, que pertencem a classe cppmatrix e representam,
@@ -384,24 +403,24 @@ void elementsList::buildModifiedNodalMatrix
                     += -1/(auxiliar->second->value) ;
             break;
           case 'E': /* Fonte de tensao controlada a tensao */
-
             matrix1 [index]
-                    [auxiliar->second->originNodeOrPositiveOutputNode] += -1;
-
+                    [auxiliar->second->originNodeOrPositiveOutputNode]
+                    += 1;
             matrix1 [index]
-                    [auxiliar->second->destinationNodeOrNegativeOutputNode] += 1;
-
+                    [auxiliar->second->destinationNodeOrNegativeOutputNode]
+                    += -1;
             matrix1 [index]
-            [auxiliar->second->controledOriginNodeOrPositiveInputNode] += (auxiliar->second->value);
-
+                    [auxiliar->second->controledOriginNodeOrPositiveInputNode]
+                    += - auxiliar->second->value;
             matrix1 [index]
-            [auxiliar->second->controledDestinationNodeOrNegativeInputNode] += -(auxiliar->second->value);
-
+                    [auxiliar->second->controledDestinationNodeOrNegativeInputNode]
+                    += auxiliar->second->value;
             matrix1 [auxiliar->second->originNodeOrPositiveOutputNode]
-                [index] += 1;
-
+                    [index]
+                    += 1;
             matrix1 [auxiliar->second->destinationNodeOrNegativeOutputNode]
-                    [index] += -1;
+                    [index]
+                    += -1;
 
             listToPrint[index] = 'j' + (auxiliar->first);
 
@@ -409,49 +428,54 @@ void elementsList::buildModifiedNodalMatrix
             break;
           case 'F': /* Fonte de corrente controlada a corrente */
             matrix1 [index]
-                    [auxiliar->second->controledOriginNodeOrPositiveInputNode] += -1;
-
+                    [auxiliar->second->controledOriginNodeOrPositiveInputNode]
+                    += 1;
             matrix1 [index]
-                    [auxiliar->second->controledDestinationNodeOrNegativeInputNode] += +1;
-
+                    [auxiliar->second->controledDestinationNodeOrNegativeInputNode]
+                    += -1;
             matrix1 [auxiliar->second->originNodeOrPositiveOutputNode]
-                    [index] += 1;
-
+                    [index]
+                    += auxiliar->second->value;
             matrix1 [auxiliar->second->destinationNodeOrNegativeOutputNode]
-                    [index] += -1;
-
+                    [index]
+                    += - auxiliar->second->value;
             matrix1 [auxiliar->second->controledOriginNodeOrPositiveInputNode]
-                    [index] += (auxiliar->second->value);
-
+                    [index]
+                    += 1;
             matrix1 [auxiliar->second->controledDestinationNodeOrNegativeInputNode]
-                    [index] += -(auxiliar->second->value);
+                    [index]
+                    += -1;
 
-            /* Quando a fonte depende de uma corrente, a corrente sera calculada e sera impressa no arquivo
-            * sendo referida por jab, onde a e o no de origem da corrente e b e o no de destino da corrente.
+            /* Quando a fonte depende de uma corrente, a corrente sera
+               calculada e sera impressa no arquivo sendo referida por jc_d,
+               onde `c' é o no de origem da corrente e `d' é o no de destino.
             */
-            node << auxiliar->second->controledOriginNodeOrPositiveInputNode
-                    << auxiliar->second->controledDestinationNodeOrNegativeInputNode;
-            listToPrint[index] = 'j' + node.str();
-                            /*	(locateCurrent ((auxiliar->second->controledOriginNodeOrPositiveInputNode),
-                                            (auxiliar->second->controledDestinationNodeOrNegativeInputNode))); */
+            {
+                char helper_str[10];
+                sprintf(helper_str, "j%d_%d",
+                        auxiliar->second->controledOriginNodeOrPositiveInputNode,
+                        auxiliar->second->controledDestinationNodeOrNegativeInputNode
+                        );
+                listToPrint[index] = helper_str;
+            }
             index++;
             break;
           case 'G': /* Fonte de corrente controlada a tensao */
             matrix1 [auxiliar->second->originNodeOrPositiveOutputNode]
                     [auxiliar->second->controledOriginNodeOrPositiveInputNode]
-                    += - auxiliar->second->value;
+                    += auxiliar->second->value;
 
             matrix1 [auxiliar->second->originNodeOrPositiveOutputNode]
                     [auxiliar->second->controledDestinationNodeOrNegativeInputNode]
-                    += auxiliar->second->value;
+                    += - auxiliar->second->value;
 
             matrix1 [auxiliar->second->destinationNodeOrNegativeOutputNode]
                     [auxiliar->second->controledOriginNodeOrPositiveInputNode]
-                    += auxiliar->second->value;
+                    += - auxiliar->second->value;
 
             matrix1 [auxiliar->second->destinationNodeOrNegativeOutputNode]
                     [auxiliar->second->controledDestinationNodeOrNegativeInputNode]
-                    += - auxiliar->second->value;
+                    += auxiliar->second->value;
             break;
           case 'H': /* Fonte de tensao controlada a corrente */
             matrix1 [index]
@@ -494,17 +518,17 @@ void elementsList::buildModifiedNodalMatrix
             break;
           case 'I': /* Fonte de corrente */
             matrix3 [auxiliar->second->originNodeOrPositiveOutputNode][1]
-                    += (auxiliar->second->value);
+                    += - (auxiliar->second->value);
             matrix3 [auxiliar->second->destinationNodeOrNegativeOutputNode][1]
-                    += -(auxiliar->second->value);
+                    += (auxiliar->second->value);
             break;
           case 'V': /* Fonte de tensao */
             matrix1 [index]
                     [auxiliar->second->originNodeOrPositiveOutputNode]
-                    += -1;
+                    += 1;
             matrix1 [index]
                     [auxiliar->second->destinationNodeOrNegativeOutputNode]
-                    += 1;
+                    += -1;
             matrix1 [auxiliar->second->originNodeOrPositiveOutputNode]
                     [index]
                     += 1;
@@ -512,8 +536,8 @@ void elementsList::buildModifiedNodalMatrix
                     [index]
                     += -1;
             matrix3 [index][1]
-                    += - auxiliar->second->value;
-            listToPrint[index] = 'j' + (auxiliar->first);
+                    += auxiliar->second->value;
+            listToPrint[index] = "j" + (auxiliar->first);
             index++;
             break;
           case 'L': case 'C': /* indutor e capacitor*/
