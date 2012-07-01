@@ -108,8 +108,9 @@ cppmatrix cppmatrix::solveMatrixSystem(cppmatrix b) {
         long double normx = sqrt((u.t() * u)[1][1]);
         u[1][1] = u[1][1] + sgn(R[i][i])*normx;
         normx = sqrt((u.t() * u)[1][1]);
-        if (normx == 0) {
-            cerr << "WARNING: Sistema singular." << endl;
+        if (normx < 1e-9) {
+            cerr << "WARNING: Sistema potencialmente singular." << endl;
+            cerr << "Norma da sub-coluna: " << normx << endl;
             continue;
         }
         u = u*(1/normx);
@@ -300,6 +301,7 @@ void elementsList::getElement (string line) {
 
       default:
         cout << "Element " << elementName << " not implemented (yet?)" << endl;
+        exit(BAD_NETLIST);
 
     }
 
@@ -529,8 +531,6 @@ void elementsList::buildModifiedNodalMatrix
             matrix1 [index]
                     [auxiliar->second->originNodeOrPositiveOutputNode]
                     += 1;
-            cout << "index=" << index << " origPositive= " <<
-                 auxiliar->second->originNodeOrPositiveOutputNode << endl;
             matrix1 [index]
                     [auxiliar->second->destinationNodeOrNegativeOutputNode]
                     += -1;
