@@ -62,6 +62,8 @@ class element {
 class cppmatrix : public map<int, map<int, long double> > {
   public:
     int n,m;
+    map <int, bool> colunas_removidas;
+    map <int, bool> linhas_removidas;
     cppmatrix operator + (cppmatrix);
     cppmatrix operator * (cppmatrix);
     cppmatrix operator * (long double);
@@ -73,6 +75,7 @@ class cppmatrix : public map<int, map<int, long double> > {
     void initialize(int, int);
     void make_id(int);
     void fill_out_with_zeros(int, int);
+    cppmatrix remove_opamp_entries();
 };
 
 /* Classe que contem os valores das correntes anteriores dos indutores e das tensoes
