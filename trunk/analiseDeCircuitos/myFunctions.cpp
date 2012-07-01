@@ -17,8 +17,6 @@
     "Unknown error.")))                                                     \
 )
 
-/// VERIFICAR ESTAMPA DO A_I E FAZER ELE
-
 using namespace std;
 
 /* funcoes para manipulacao de matrizes */
@@ -251,6 +249,7 @@ void elementsList::getElement (string line) {
       case 'E':
       case 'F':
       case 'G':
+      case 'H':
         if (qty_of_args != 5) {
             cerr << "Erro na leitura do arquivo."
                  << " Maneira correta de especificar a fonte controlada:"
@@ -422,7 +421,7 @@ void elementsList::buildModifiedNodalMatrix
                     [index]
                     += -1;
 
-            listToPrint[index] = 'j' + (auxiliar->first);
+            listToPrint[index] = "j" + auxiliar->first;
 
             index++;
             break;
@@ -478,43 +477,47 @@ void elementsList::buildModifiedNodalMatrix
                     += auxiliar->second->value;
             break;
           case 'H': /* Fonte de tensao controlada a corrente */
-            matrix1 [index]
-                    [auxiliar->second->originNodeOrPositiveOutputNode] += -1;
-
-            matrix1 [index]
-                    [auxiliar->second->destinationNodeOrNegativeOutputNode] += 1;
-
+            // `index' refers to the curr. in the short-circuit
+            // `index+1' refers to the current in the transresistance
             matrix1 [auxiliar->second->originNodeOrPositiveOutputNode]
-                    [index] += 1;
-
+                    [index+1] += 1;
             matrix1 [auxiliar->second->destinationNodeOrNegativeOutputNode]
+                    [index+1] += -1;
+            matrix1 [auxiliar->second->controledOriginNodeOrPositiveInputNode]
+                    [index] += 1;
+            matrix1 [auxiliar->second->controledDestinationNodeOrNegativeInputNode]
                     [index] += -1;
 
-            listToPrint[index] = 'j' + (auxiliar->first);
+            matrix1 [index]
+                    [auxiliar->second->controledOriginNodeOrPositiveInputNode]
+                    += 1;
+            matrix1 [index]
+                    [auxiliar->second->controledDestinationNodeOrNegativeInputNode]
+                    += -1;
 
+            matrix1 [index+1]
+                    [auxiliar->second->originNodeOrPositiveOutputNode]
+                    += 1;
+            matrix1 [index+1]
+                    [auxiliar->second->destinationNodeOrNegativeOutputNode]
+                    += -1;
+            matrix1 [index+1]
+                    [index]
+                    += - auxiliar->second->value;
+
+            {
+                char helper_str[10];
+                sprintf(helper_str, "j%d_%d",
+                        auxiliar->second->controledOriginNodeOrPositiveInputNode,
+                        auxiliar->second->controledDestinationNodeOrNegativeInputNode
+                        );
+                listToPrint[index] = helper_str;
+            }
             index++;
 
-            matrix1 [index]
-                    [auxiliar->second->controledOriginNodeOrPositiveInputNode] += -1;
-
-            matrix1 [index]
-                    [auxiliar->second->controledDestinationNodeOrNegativeInputNode] += +1;
-
-            matrix1 [auxiliar->second->originNodeOrPositiveOutputNode]
-                    [index] += 1;
-
-            matrix1 [auxiliar->second->destinationNodeOrNegativeOutputNode]
-                    [index] += -1;
-
-            matrix1 [index--]
-                    [index] += (auxiliar->second->value);
-
-            node << auxiliar->second->controledOriginNodeOrPositiveInputNode
-                    << auxiliar->second->controledDestinationNodeOrNegativeInputNode;
-            listToPrint[index] = 'j' + node.str();
-                /*  (locateCurrent ((auxiliar->second->controledOriginNodeOrPositiveInputNode),
-                    (auxiliar->second->controledDestinationNodeOrNegativeInputNode))); */
+            listToPrint[index] = "j" + auxiliar->first;
             index++;
+
             break;
           case 'I': /* Fonte de corrente */
             matrix3 [auxiliar->second->originNodeOrPositiveOutputNode][1]
@@ -526,6 +529,8 @@ void elementsList::buildModifiedNodalMatrix
             matrix1 [index]
                     [auxiliar->second->originNodeOrPositiveOutputNode]
                     += 1;
+            cout << "index=" << index << " origPositive= " <<
+                 auxiliar->second->originNodeOrPositiveOutputNode << endl;
             matrix1 [index]
                     [auxiliar->second->destinationNodeOrNegativeOutputNode]
                     += -1;
