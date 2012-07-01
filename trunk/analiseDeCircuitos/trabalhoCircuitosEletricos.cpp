@@ -59,6 +59,7 @@ int main (int argc, char *argv[]) {
         getline(myFile, line);
         cout << "Lida a linha [" << line << "]" << endl;
         if (line.size() == 0) continue;
+        split_line = split(line, qty_of_words);
         switch (line[0]) {
           case 'R': case 'L': case 'C':
           case 'E': case 'F': case 'G': case 'H': case 'O':
@@ -66,7 +67,6 @@ int main (int argc, char *argv[]) {
           case 'V': case 'I':
             list.getElement (line); break;
           case '.':
-            split_line = split(line, qty_of_words);
             if (qty_of_words != 4 && qty_of_words != 5) {
                 cerr << ".TRAN <passo> <tempo final> GEAR[<n>] <passos internos> [UIC]" << endl;
                 exit(BAD_NETLIST);
