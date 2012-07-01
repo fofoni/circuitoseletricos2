@@ -137,6 +137,8 @@ void cppmatrix::fill_out_with_zeros(int rows, int cols) {
     n = rows;
     m = cols;
     for (int i=1; i<=n; i++) {
+        if (linhas_removidas.count(i) == 0)
+            linhas_removidas[i] = false;
         if (this->count(i) == 0) // if this row is empty, then...
             for (int j=1; j<=m; j++)
                 (*this)[i][j] = 0;
@@ -144,6 +146,27 @@ void cppmatrix::fill_out_with_zeros(int rows, int cols) {
             for (int j=1; j<=m; j++)
                 if ( ((*this)[i]).count(j) == 0 )
                     (*this)[i][j] = 0;
+    }
+    for (int j=1; j<=m; j++)
+        if (colunas_removidas.count(j) == 0)
+            colunas_removidas[j] = false;
+}
+
+
+/// TÁ ERRADO. AS COLUNAS É PRA SOMAR ANTES DE REMOVER.
+cppmatrix cppmatrix::remove_opamp_entries() {
+    cppmatrix resultado;
+    int i, i2, j, j2;
+    resultado.initialize(n, m);
+    for (i=1, i2=1; i<=n; i++) {
+        if (linhas_removidas[i]) continue;
+        // copia a linha this[i] pra linha resultado[i2]
+        for (j=1, j2=1; j<=m; j++) {
+            if (colunas_removidas[j]) continue;
+            resultado[i2][j2] = (*this)[i][j];
+            j2++;
+        }
+        i2++;
     }
 }
 
