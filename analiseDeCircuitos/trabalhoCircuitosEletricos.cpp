@@ -75,8 +75,8 @@ int main (int argc, char *argv[]) {
                 cerr << "Simulacao '" << split_line[0] << "' nao reconhecida." << endl;
                 exit(BAD_NETLIST);
             }
-            passo = atof(split_line[1].c_str());
-            tempo_final = atof(split_line[2].c_str());
+            passo = strtold(split_line[1].c_str(), NULL);
+            tempo_final = strtold(split_line[2].c_str(), NULL);
             if (split_line[3].size() < 4 ||
                 split_line[3].substr(0, 4).compare("GEAR") != 0) {
                 cerr << "Metodo '" << split_line[3] << "' nao reconhecido." << endl;
@@ -148,7 +148,7 @@ int main (int argc, char *argv[]) {
         header = header + new_str;
     }
     cout << header << endl;
-    cout << "      (bias)";
+    cout << "           0";
     for (int i = 1; i <= matrix1.n; i++) {
         char new_str[13];
         sprintf(new_str, " % 11.4Lg", matrix2[i][1]);
@@ -157,26 +157,40 @@ int main (int argc, char *argv[]) {
     cout << endl;
 
     /*while (element != list.end() ){
-    	if (UIC)
-    		capacitorInductor->second[0] = element->second->initialConditions;
-    	else
-    		capacitorInductor->second[0] = 0;
-    	element++;
+        if (UIC)
+            capacitorInductor->second[0] = element->second->initialConditions;
+        else
+            capacitorInductor->second[0] = 0;
+        element++;
     }*/
 
-    /*for (long double i = 0 ; i < (tempo_final * (passos_internos + 1) )/ passo; i++ ){
-    	list.buildModifiedNodalMatrix(listToPrint, matrix1, matrix3, reactiveElements, passo, gear_order, UIC);
-    	matrix2 = matrix1.solveMatrixSystem(matrix3);
-    	list.printResult (argv, listToPrint, matrix2);
-    	for (capacitorInductor = reactiveElements.begin();
-    		 capacitorInductor != list.end();
-   			 capacitorInductor ++){
+    for (long int i = 1;
+         i <= tempo_final*(passos_internos + 1)/passo; i++) {
 
-   			 capacitorInductor->second[i] = capacitorInductor->second[i-1];
-   			 capacitorInductor->second[i-1]= matrix2[capacitorInductor->second[8]] - matrix2[capacitorInductor->second[9]];
-   		}
+        char new_str[13];
+        list.buildModifiedNodalMatrix(listToPrint, matrix1, matrix3,
+                                      reactiveElements, passo, gear_order, UIC);
 
-    }*/
+        matrix2 = matrix1.solveMatrixSystem(matrix3);
+
+        sprintf(new_str, " % 11.4Lg", i*passo/(passos_internos+1));
+        cout << new_str;
+        for (int i = 1; i <= matrix1.n; i++) {
+            sprintf(new_str, " % 11.4Lg", matrix2[i][1]);
+            cout << new_str;
+        }
+        cout << endl;
+        //list.printResult (argv, listToPrint, matrix2);
+
+        /*for (capacitorInductor = reactiveElements.begin();
+            capacitorInductor != list.end();
+            capacitorInductor ++){
+
+            capacitorInductor->second[i] = capacitorInductor->second[i-1];
+            capacitorInductor->second[i-1]= matrix2[capacitorInductor->second[8]] - matrix2[capacitorInductor->second[9]];
+        }*/
+
+    }
 
     return 0;
 

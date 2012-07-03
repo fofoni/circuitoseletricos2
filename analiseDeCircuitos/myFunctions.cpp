@@ -137,8 +137,6 @@ void cppmatrix::fill_out_with_zeros(int rows, int cols) {
     n = rows;
     m = cols;
     for (int i=1; i<=n; i++) {
-        if (linhas_removidas.count(i) == 0)
-            linhas_removidas[i] = false;
         if (this->count(i) == 0) // if this row is empty, then...
             for (int j=1; j<=m; j++)
                 (*this)[i][j] = 0;
@@ -146,27 +144,6 @@ void cppmatrix::fill_out_with_zeros(int rows, int cols) {
             for (int j=1; j<=m; j++)
                 if ( ((*this)[i]).count(j) == 0 )
                     (*this)[i][j] = 0;
-    }
-    for (int j=1; j<=m; j++)
-        if (colunas_removidas.count(j) == 0)
-            colunas_removidas[j] = false;
-}
-
-
-/// TÁ ERRADO. AS COLUNAS É PRA SOMAR ANTES DE REMOVER.
-cppmatrix cppmatrix::remove_opamp_entries() {
-    cppmatrix resultado;
-    int i, i2, j, j2;
-    resultado.initialize(n, m);
-    for (i=1, i2=1; i<=n; i++) {
-        if (linhas_removidas[i]) continue;
-        // copia a linha this[i] pra linha resultado[i2]
-        for (j=1, j2=1; j<=m; j++) {
-            if (colunas_removidas[j]) continue;
-            resultado[i2][j2] = (*this)[i][j];
-            j2++;
-        }
-        i2++;
     }
 }
 
@@ -321,6 +298,33 @@ void elementsList::getElement (string line) {
             exit(BAD_NETLIST);
         }
         break;
+
+      case 'O':
+        if (qty_of_args != 4) {
+            cerr << "Erro na leitura do arquivo."
+                 << " Maneira correta de especificar um amp.op.:"
+                 << endl << "O<nome> <out+> <out-> <in+> <in->" << endl;
+            exit(BAD_NETLIST);
+        }
+        (*this)[elementName]->originNodeOrPositiveOutputNode = atoi (split_line[1].c_str());
+        (*this)[elementName]->destinationNodeOrNegativeOutputNode = atoi (split_line[2].c_str());
+        (*this)[elementName]->controledOriginNodeOrPositiveInputNode = atoi (split_line[3].c_str());
+        (*this)[elementName]->controledDestinationNodeOrNegativeInputNode = atoi (split_line[4].c_str());
+        break;
+
+      case 'C': case 'L':
+        if ((qty_of_args < 3) or (qty_of_args > 4)) {
+            cerr << "Erro na leitura do arquivo."
+                 << " Maneira correta de especificar um elemento reativo:"
+                 << endl << elementName[0]
+                 << "<nome> <nó1> <nó2> <valor> [IC=condição inicial]" << endl;
+            exit(BAD_NETLIST);
+        }
+        (*this)[elementName]->originNodeOrPositiveOutputNode = atoi (split_line[1].c_str());
+        (*this)[elementName]->destinationNodeOrNegativeOutputNode = atoi (split_line[2].c_str());
+        (*this)[elementName]->value = strtold(split_line[3].c_str(), NULL);
+        if (qty_of_args == 4)
+            (*this)[elementName]->initialConditions = strtold(split_line[4].c_str(), NULL);
 
       default:
         cout << "Element " << elementName << " not implemented (yet?)" << endl;
@@ -568,6 +572,22 @@ void elementsList::buildModifiedNodalMatrix
             listToPrint[index] = "j" + (auxiliar->first);
             index++;
             break;
+          case 'O': /* Operacional */
+            matrix1 [auxiliar->second->originNodeOrPositiveOutputNode]
+                    [index]
+                    += 1;
+            matrix1 [auxiliar->second->destinationNodeOrNegativeOutputNode]
+                    [index]
+                    += -1;
+            matrix1 [index]
+                    [auxiliar->second->controledOriginNodeOrPositiveInputNode]
+                    += -1;
+            matrix1 [index]
+                    [auxiliar->second->controledDestinationNodeOrNegativeInputNode]
+                    += 1;
+            listToPrint[index] = "j" + auxiliar->first;
+            index++;
+            break;
           case 'L': case 'C': /* indutor e capacitor*/
         	  /*capacitorInductor->first = auxiliar ->first; // essa linha ta dando erro
         	  this->gearMethod (auxiliar, reactiveElements, passo, gear_order, UIC);
@@ -657,7 +677,7 @@ void elementsList::buildModifiedNodalMatrix
 
 }
 
-/*****************************************************************************************************/
+/*****************************************************************************/
 /* Funcao responsavel em substituir indutor/capacitor pelo respectivo modelo */
 
 void elementsList :: gearMethod (iterator elementPosition, capacitor_inductor reactiveElements,
@@ -705,31 +725,31 @@ void elementsList :: gearMethod (iterator elementPosition, capacitor_inductor re
 /****************************************************************************************************/
 
 /* Funcao responsavel em imprimir o resultado em um arquivo */
-void elementsList :: printResult (char* argv[], tensionAndCurrent listToPrint, cppmatrix matrix2) {
-
-    map <int, string> :: iterator list;
-    ofstream answerFile;
-    int auxiliar = numberOfNodes();
-
-    answerFile.open (*argv[1] + "_answer");
-
-    /* Imprimindo a primeira linha no arquivo */
-    answerFile << " t" << endl;
-    for (int aux = auxiliar; aux == 0; aux++) {
-        answerFile << " " << aux << endl;
-        }
-    for (list = listToPrint.begin(); list != listToPrint.end(); list++){
-        answerFile << " " << list->second << endl;
-        auxiliar++;
-    }
-    answerFile << "\n";
-
-    /* Imprimindo o resto do arquivo */
-
-    for (int aux = 1; aux == auxiliar; aux ++){
-        answerFile << " " << matrix2[aux][0] ;
-    }
-    answerFile << "\n";
-
-    answerFile.close();
-}
+// void elementsList :: printResult (string netlist_filename, tensionAndCurrent listToPrint, cppmatrix matrix2) {
+//
+//     map <int, string> :: iterator list;
+//     ofstream answerFile;
+//     int auxiliar = numberOfNodes();
+//
+//     answerFile.open (netlist_filename + "_answer.txt");
+//
+//     /* Imprimindo a primeira linha no arquivo */
+//     answerFile << " t" << endl;
+//     for (int aux = auxiliar; aux == 0; aux++) {
+//         answerFile << " " << aux << endl;
+//         }
+//     for (list = listToPrint.begin(); list != listToPrint.end(); list++){
+//         answerFile << " " << list->second << endl;
+//         auxiliar++;
+//     }
+//     answerFile << "\n";
+//
+//     /* Imprimindo o resto do arquivo */
+//
+//     for (int aux = 1; aux == auxiliar; aux ++){
+//         answerFile << " " << matrix2[aux][0] ;
+//     }
+//     answerFile << "\n";
+//
+//     answerFile.close();
+// }

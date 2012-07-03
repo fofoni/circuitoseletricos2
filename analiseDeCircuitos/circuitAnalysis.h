@@ -29,7 +29,14 @@ using namespace std;
 #define     NON_SQUARE_MATRIX_QR    3
 #define     SINGULAR_LINEAR_SYSTEM  4
 
-#define     tensionAndCurrent   map <int, string>
+#define     tensionAndCurrent       map <int, string>
+
+/* Classe que contem os valores das correntes anteriores dos indutores e das tensoes
+ * anteriores dos capacitores nas 8 primeiras posicoes. Nas 2 ultimas posicoes contem
+ * os nos de origem e destino dos capacitores e na penultima posicao o valor da linha
+ * na qual a corrente dos indutors encontra-se.
+ */
+#define     capacitor_inductor      map<string, long double [10]>
 
 map<int, string> split(string str, int &i, char delim = ' ');
 
@@ -62,8 +69,6 @@ class element {
 class cppmatrix : public map<int, map<int, long double> > {
   public:
     int n,m;
-    map <int, bool> colunas_removidas;
-    map <int, bool> linhas_removidas;
     cppmatrix operator + (cppmatrix);
     cppmatrix operator * (cppmatrix);
     cppmatrix operator * (long double);
@@ -75,17 +80,7 @@ class cppmatrix : public map<int, map<int, long double> > {
     void initialize(int, int);
     void make_id(int);
     void fill_out_with_zeros(int, int);
-    cppmatrix remove_opamp_entries();
 };
-
-/* Classe que contem os valores das correntes anteriores dos indutores e das tensoes
- * anteriores dos capacitores nas 8 primeiras posicoes. Nas 2 ultimas posicoes contem
- * os nos de origem e destino dos capacitores e na penultima posicao o valor da linha
- * na qual a corrente dos indutors encontra-se.
- */
-class capacitor_inductor : public map<string, long double [10]> {
-};
-
 
 /* Container cuja chave eh o nome do elemento do circuito
    formada pela classe element */
@@ -97,7 +92,7 @@ class elementsList : public map<string, element*> {
     void    buildModifiedNodalMatrix (tensionAndCurrent&,
                                       cppmatrix&, cppmatrix&,
                                       capacitor_inductor, long double, int, int);
-    void    printResult (char**, tensionAndCurrent, cppmatrix);
+    //void    printResult (char**, tensionAndCurrent, cppmatrix);
     /* string locateCurrent (int, int);*/
 };
 
