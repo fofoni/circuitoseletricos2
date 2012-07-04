@@ -18,5 +18,4 @@ R_void_3 5 5 3e-3
 R_void_4 3 4 1e3
 R_void_5 0 0 1e9
 
-# transiente, passo 1us, de 0 ate 1ms
-.TRAN 0.000001 0.001 GEAR4 0
+.TRAN 1 2 GEAR 0
