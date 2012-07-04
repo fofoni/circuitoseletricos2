@@ -7,6 +7,11 @@
  * Programa de análise de circuitos no tempo para estudar os métodos de Gear
  */
 
+#ifndef     CIRCUITSANALYSES_H_
+#define     CIRCUITSANALYSES_H_
+
+#define _XOPEN_SOURCE 600
+
 #include <iostream>
 #include <istream>
 #include <fstream>
@@ -21,13 +26,18 @@
 
 using namespace std;
 
-#ifndef     CIRCUITSANALYSES_H_
-#define     CIRCUITSANALYSES_H_
-
 #define     FILE_IS_NOT_OPEN        1
 #define     BAD_NETLIST             2
 #define     NON_SQUARE_MATRIX_QR    3
 #define     SINGULAR_LINEAR_SYSTEM  4
+
+#ifdef CHANGE_STRTOLD
+# define strtold(x,y) ((long double)atof((x)))
+#endif
+
+#ifndef M_PI
+# define M_PI ((long double)(3.14159265358979))
+#endif
 
 #define     tensionAndCurrent       map <int, string>
 
@@ -36,8 +46,9 @@ using namespace std;
  * os nos de origem e destino dos capacitores e na penultima posicao o valor da linha
  * na qual a corrente dos indutors encontra-se.
  */
-#define     capacitor_inductor      map<string, long double [10]>
+#define     capacitor_inductor      map<string, map<int, long double> >
 
+void print_state(capacitor_inductor reactiveElements);
 map<int, string> split(string str, int &i, char delim = ' ');
 
 /* Classe que possui os parametros de todos os
@@ -61,6 +72,15 @@ class element {
         long double   impedance;
         void    printMyself();
         element();
+
+        // fonte independente
+        long double dc_level;
+        long double ampl;
+        long double freq;
+        long double atraso;
+        long double atenuacao;
+        long double angulo;
+        long double num_de_ciclos;
     };
 
 /* Classe que vai conter as matrizes da analise modificada,
@@ -88,10 +108,12 @@ class elementsList : public map<string, element*> {
   public:
     void    getElement (string);
     int     numberOfNodes();
-    void	gearMethod (iterator, capacitor_inductor, long double, int, int);
+    void	gearMethod (string element_name,
+                        capacitor_inductor, long double, int, int);
     void    buildModifiedNodalMatrix (tensionAndCurrent&,
                                       cppmatrix&, cppmatrix&,
-                                      capacitor_inductor, long double, int, int);
+                                      capacitor_inductor&,
+                                      long double, int, int, long double);
     //void    printResult (char**, tensionAndCurrent, cppmatrix);
     /* string locateCurrent (int, int);*/
 };

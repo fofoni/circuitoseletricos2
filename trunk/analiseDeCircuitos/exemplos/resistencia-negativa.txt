@@ -1,0 +1,7 @@
+oscilador com amplitude crescente
+
+C1 1 0 1 IC=0
+L1 1 0 1 IC=-1
+R1 1 0 -10
+
+.TRAN .001 30 GEAR4 0 UIC

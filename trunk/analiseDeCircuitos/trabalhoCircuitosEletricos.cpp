@@ -22,6 +22,10 @@ int main (int argc, char *argv[]) {
     cppmatrix           matrix3; /* B */
     capacitor_inductor  reactiveElements;
 
+    ofstream answerFile;
+    string input_filename;
+    string output_filename;
+
     long double passo;
     long double tempo_final;
     int gear_order;
@@ -30,16 +34,14 @@ int main (int argc, char *argv[]) {
 
     map<int, string> split_line;
 
-    map<string, element*> :: iterator element = list.begin();
-    capacitor_inductor :: iterator capacitorInductor = reactiveElements.begin();
-
     if (argc < 2) {
         cerr << "Usage:" << endl;
         cerr << "  " << argv[0] << " <netlist file>" << endl;
         return FILE_IS_NOT_OPEN;
     }
 
-    myFile.open (argv[1]);
+    input_filename = argv[1];
+    myFile.open (input_filename.c_str());
 
     if (!(myFile.is_open())) {
         cerr << "Erro (" << errno << "): " << /*strerror (errno) <<*/ "." << endl;
@@ -57,7 +59,7 @@ int main (int argc, char *argv[]) {
     while (myFile.good()) {
         int qty_of_words;
         getline(myFile, line);
-        cout << "Lida a linha [" << line << "]" << endl;
+//         cout << "Lida a linha [" << line << "]" << endl;
         if (line.size() == 0) continue;
         split_line = split(line, qty_of_words);
         switch (line[0]) {
@@ -100,8 +102,8 @@ int main (int argc, char *argv[]) {
             }
           case '*': case '#': break; // comentarios da netlist
           default:
-            cerr << "Esse elemento " << split_line[0] << " nao esta implementado."
-                 << endl;
+            cerr << "Esse elemento " << split_line[0]
+                 << " nao esta implementado." << endl;
             exit(BAD_NETLIST);
             break;
         }
@@ -122,79 +124,140 @@ int main (int argc, char *argv[]) {
         exit(BAD_NETLIST);
     }
 
-    list.buildModifiedNodalMatrix(listToPrint, matrix1, matrix3,
-                                  reactiveElements, passo, gear_order, UIC);
-
-    matrix1.printMyself();
-    cout << endl;
-    matrix3.printMyself();
-    cout << endl;
-
-    matrix2 = matrix1.solveMatrixSystem(matrix3);
-
-    matrix2.printMyself();
-
-    cout << endl;
-
-    string header = "           t";
-    for (int i = 1; i <= list.numberOfNodes(); i++) {
-        char new_str[13];
-        sprintf(new_str, " %11d", i);
-        header = header + new_str;
-    }
-    for (int i = list.numberOfNodes()+1; i <= matrix1.n; i++) {
-        char new_str[13];
-        sprintf(new_str, " %11s", listToPrint[i].c_str());
-        header = header + new_str;
-    }
-    cout << header << endl;
-    cout << "           0";
-    for (int i = 1; i <= matrix1.n; i++) {
-        char new_str[13];
-        sprintf(new_str, " % 11.4Lg", matrix2[i][1]);
-        cout << new_str;
-    }
-    cout << endl;
-
-    /*while (element != list.end() ){
-        if (UIC)
-            capacitorInductor->second[0] = element->second->initialConditions;
+    for (map<string, element*>::iterator list_iter = list.begin();
+         list_iter != list.end();
+         list_iter++)
+    {
+        if ((list_iter->first[0] != 'L') and (list_iter->first[0] != 'C'))
+            continue;
+        if (UIC==1)
+            for (int k=0; k<8; k++)
+                reactiveElements[list_iter->first][k] = list_iter->second->initialConditions;
         else
-            capacitorInductor->second[0] = 0;
-        element++;
-    }*/
+            for (int k=0; k<8; k++)
+                reactiveElements[list_iter->first][k] = 0;
+    }
+
+    output_filename = input_filename + "_answer.m";
+    answerFile.open (output_filename.c_str());
+
+    // pré-simulação
+    {
+
+        char new_str[13];
+        list.buildModifiedNodalMatrix(listToPrint, matrix1, matrix3,
+                                      reactiveElements,
+                                      passo/(passos_internos+1)/1000.0,
+                                      gear_order, UIC, 0);
+
+#ifdef OUTPUT_MATLAB
+        string header = "A=[%       t";
+#else
+        string header = "           t";
+#endif
+        for (int i = 1; i <= list.numberOfNodes(); i++) {
+            sprintf(new_str, " %11d", i);
+            header = header + new_str;
+        }
+        for (int i = list.numberOfNodes()+1; i <= matrix1.n; i++) {
+            sprintf(new_str, " %11s", listToPrint[i].c_str());
+            header = header + new_str;
+        }
+        answerFile << header << endl;
+
+        //matrix1.printMyself(); cout << endl;
+        //matrix3.printMyself(); cout << endl;
+
+        matrix2 = matrix1.solveMatrixSystem(matrix3);
+
+        answerFile << "           0";
+        for (int i = 1; i <= matrix1.n; i++) {
+            sprintf(new_str, " % 11.4Lg", matrix2[i][1]);
+            answerFile << new_str;
+        }
+        answerFile << endl;
+
+        for (capacitor_inductor::iterator reactive_iter = reactiveElements.begin();
+             reactive_iter != reactiveElements.end();
+             reactive_iter++) {
+            if (reactive_iter->first[0] == 'L')
+                reactive_iter->second[0] = matrix2[reactive_iter->second[8]][1];
+            else {
+                matrix2[0][1] = 0;
+                reactive_iter->second[0] = matrix2[reactive_iter->second[8]][1]
+                                         - matrix2[reactive_iter->second[9]][1];
+            }
+            reactive_iter->second[7] = reactive_iter->second[6] =
+            reactive_iter->second[5] = reactive_iter->second[4] =
+            reactive_iter->second[3] = reactive_iter->second[2] =
+            reactive_iter->second[1] = reactive_iter->second[0];
+        }
+
+    }
 
     for (long int i = 1;
          i <= tempo_final*(passos_internos + 1)/passo; i++) {
 
         char new_str[13];
         list.buildModifiedNodalMatrix(listToPrint, matrix1, matrix3,
-                                      reactiveElements, passo, gear_order, UIC);
+                                      reactiveElements, passo/(passos_internos+1),
+                                      gear_order, UIC, i*passo/(passos_internos+1));
+
+//         if (i==1) {        matrix1.printMyself(); cout << endl;
+//         matrix3.printMyself(); cout << endl;
+//         }
 
         matrix2 = matrix1.solveMatrixSystem(matrix3);
 
-        sprintf(new_str, " % 11.4Lg", i*passo/(passos_internos+1));
-        cout << new_str;
-        for (int i = 1; i <= matrix1.n; i++) {
-            sprintf(new_str, " % 11.4Lg", matrix2[i][1]);
-            cout << new_str;
+        if (i % (passos_internos+1) == 0) {
+            sprintf(new_str, " % 11.4Lg", i*passo/(passos_internos+1));
+            answerFile << new_str;
+            for (int k = 1; k <= matrix1.n; k++) {
+                sprintf(new_str, " % 11.4Lg", matrix2[k][1]);
+                answerFile << new_str;
+            }
+            answerFile << endl;
         }
-        cout << endl;
-        //list.printResult (argv, listToPrint, matrix2);
 
-        /*for (capacitorInductor = reactiveElements.begin();
-            capacitorInductor != list.end();
-            capacitorInductor ++){
-
-            capacitorInductor->second[i] = capacitorInductor->second[i-1];
-            capacitorInductor->second[i-1]= matrix2[capacitorInductor->second[8]] - matrix2[capacitorInductor->second[9]];
-        }*/
+        for (capacitor_inductor::iterator reactive_iter = reactiveElements.begin();
+             reactive_iter != reactiveElements.end();
+             reactive_iter++) {
+            reactive_iter->second[7] = reactive_iter->second[6];
+            reactive_iter->second[6] = reactive_iter->second[5];
+            reactive_iter->second[5] = reactive_iter->second[4];
+            reactive_iter->second[4] = reactive_iter->second[3];
+            reactive_iter->second[3] = reactive_iter->second[2];
+            reactive_iter->second[2] = reactive_iter->second[1];
+            reactive_iter->second[1] = reactive_iter->second[0];
+            if (reactive_iter->first[0] == 'L')
+                reactive_iter->second[0] = matrix2[reactive_iter->second[8]][1];
+            else {
+                matrix2[0][1] = 0;
+                reactive_iter->second[0] = matrix2[reactive_iter->second[8]][1]
+                                         - matrix2[reactive_iter->second[9]][1];
+            }
+        }
 
     }
 
-    return 0;
+#ifdef OUTPUT_MATLAB
+    answerFile << "];";
+    answerFile << "t=A(:,1); " << endl;
+    for (int i = 1; i <= list.numberOfNodes(); i++) {
+        char new_str[20];
+        sprintf(new_str, "e%d=A(:,%d); ", i, i+1);
+        answerFile << new_str;
+    }
+    answerFile << endl;
+    for (int i = list.numberOfNodes()+1; i <= matrix1.n; i++) {
+        char new_str[20];
+        sprintf(new_str, "%s=A(:,%d); ", listToPrint[i].c_str(), i+1);
+        answerFile << new_str;
+    }
+    answerFile << endl;
+#endif
 
-    //list.printResult (argv, listToPrint, matrix2);
+    answerFile.close();
 
 #if !(defined(unix) || defined(__unix__) || defined(__unix))
     cin.get();

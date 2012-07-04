@@ -1,0 +1,10 @@
+# passa-altas sallen-key
+
+V1 1 0 DC 1
+C1 1 2 1e-9
+C2 2 3 1e-9
+R1 2 4 10e3
+R2 3 0 1e6
+O1 4 0 3 4
+
+.TRAN 10e-6 10e-3 GEAR4 0

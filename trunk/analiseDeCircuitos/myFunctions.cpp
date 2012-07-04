@@ -110,7 +110,7 @@ cppmatrix cppmatrix::solveMatrixSystem(cppmatrix b) {
         normx = sqrt((u.t() * u)[1][1]);
         if (normx < 1e-9) {
             cerr << "WARNING: Sistema potencialmente singular." << endl;
-            cerr << "Norma da sub-coluna: " << normx << endl;
+            cerr << "         Norma da sub-coluna: " << normx << endl;
             continue;
         }
         u = u*(1/normx);
@@ -284,13 +284,25 @@ void elementsList::getElement (string line) {
             }
             (*this)[elementName]->value = strtold(split_line[4].c_str(), NULL);
         }
-        else if (split_line[3].compare("SIN") == 0) {
-            cerr << "NAO TEM FONTE SENOIDAL AINDA" << endl;
-            exit(BAD_NETLIST);
-        }
         else if (split_line[3].compare("PULSE") == 0) {
             cerr << "NAO TEM FONTE PULSE AINDA" << endl;
             exit(BAD_NETLIST);
+        }
+        else if (split_line[3].compare("SIN") == 0) {
+            if (qty_of_args != 10) {
+                cerr << "Erro na leitura do arquivo."
+                << " Maneira correta de especificar a fonte senoidal:"
+                << endl << elementName << " <no+> <no-> SIN <nível DC> <amplitude> <freq(Hz)> <atraso> <atenuação> <ângulo> <num. de ciclos>"
+                << endl;
+                exit(BAD_NETLIST);
+            }
+            (*this)[elementName]->dc_level = strtold(split_line[4].c_str(), NULL);
+            (*this)[elementName]->ampl = strtold(split_line[5].c_str(), NULL);
+            (*this)[elementName]->freq = strtold(split_line[6].c_str(), NULL);
+            (*this)[elementName]->atraso = strtold(split_line[7].c_str(), NULL);
+            (*this)[elementName]->atenuacao = strtold(split_line[8].c_str(), NULL);
+            (*this)[elementName]->angulo = strtold(split_line[9].c_str(), NULL);
+            (*this)[elementName]->num_de_ciclos = strtold(split_line[10].c_str(), NULL);
         }
         else {
             cerr << "Este parametro \"" << split_line[3]
@@ -323,8 +335,18 @@ void elementsList::getElement (string line) {
         (*this)[elementName]->originNodeOrPositiveOutputNode = atoi (split_line[1].c_str());
         (*this)[elementName]->destinationNodeOrNegativeOutputNode = atoi (split_line[2].c_str());
         (*this)[elementName]->value = strtold(split_line[3].c_str(), NULL);
-        if (qty_of_args == 4)
-            (*this)[elementName]->initialConditions = strtold(split_line[4].c_str(), NULL);
+        if (qty_of_args == 4) {
+            if (split_line[4].size() <= 3) {
+                cerr << "Erro na leitura do arquivo."
+                     << " Maneira correta de especificar um elemento reativo:"
+                     << endl << elementName[0]
+                     << "<nome> <nó1> <nó2> <valor> [IC=condição inicial]" << endl;
+                exit(BAD_NETLIST);
+            }
+            (*this)[elementName]->initialConditions = strtold(split_line[4].substr(3).c_str(), NULL);
+//            cerr << "READ IC=" << (*this)[elementName]->initialConditions << endl;
+        }
+        break;
 
       default:
         cout << "Element " << elementName << " not implemented (yet?)" << endl;
@@ -390,8 +412,8 @@ string elementsList::locateCurrent (int node1, int node2){
  */
 void elementsList::buildModifiedNodalMatrix
     (tensionAndCurrent& listToPrint, cppmatrix& matrix1, cppmatrix& matrix3,
-    capacitor_inductor reactiveElements, long double passo, int gear_order,
-    int UIC) {
+    capacitor_inductor& reactiveElements, long double passo, int gear_order,
+    int UIC, long double time_inst) {
 
     /* O index inicialmente corresponde ao numero de nos do circuito. Ao longo
      * da funcao, ele é incrementado cada vez que se faz necessario o calculo
@@ -403,7 +425,10 @@ void elementsList::buildModifiedNodalMatrix
     stringstream node;
 
     map <string, element *> :: iterator auxiliar;
-    capacitor_inductor :: iterator capacitorInductor = reactiveElements.begin();
+//     capacitor_inductor :: iterator capacitorInductor = reactiveElements.begin();
+
+    matrix1.clear();
+    matrix3.clear();
 
     for (auxiliar = this->begin(); auxiliar != this->end(); auxiliar++) {
 
@@ -549,10 +574,21 @@ void elementsList::buildModifiedNodalMatrix
 
             break;
           case 'I': /* Fonte de corrente */
-            matrix3 [auxiliar->second->originNodeOrPositiveOutputNode][1]
-                    += - (auxiliar->second->value);
-            matrix3 [auxiliar->second->destinationNodeOrNegativeOutputNode][1]
-                    += (auxiliar->second->value);
+            {
+                long double valor_da_fonte;
+                if (auxiliar->second->parameter.compare("DC") == 0)
+                    valor_da_fonte = auxiliar->second->value;
+                else if (auxiliar->second->parameter.compare("SIN") == 0) {
+                    if ((time_inst < auxiliar->second->atraso) or (time_inst > auxiliar->second->atraso + auxiliar->second->num_de_ciclos/auxiliar->second->freq))
+                        valor_da_fonte = auxiliar->second->dc_level + auxiliar->second->ampl * sin(auxiliar->second->angulo * M_PI / 180.0 );
+                    else
+                        valor_da_fonte = auxiliar->second->dc_level + auxiliar->second->ampl * exp(-(time_inst-auxiliar->second->atraso)*auxiliar->second->atenuacao) * sin(2 * M_PI * auxiliar->second->freq * (time_inst-auxiliar->second->atraso) + auxiliar->second->angulo * M_PI / 180.0);
+                }
+                matrix3 [auxiliar->second->originNodeOrPositiveOutputNode][1]
+                        += - valor_da_fonte;
+                matrix3 [auxiliar->second->destinationNodeOrNegativeOutputNode][1]
+                        += valor_da_fonte;
+            }
             break;
           case 'V': /* Fonte de tensao */
             matrix1 [index]
@@ -567,8 +603,14 @@ void elementsList::buildModifiedNodalMatrix
             matrix1 [auxiliar->second->destinationNodeOrNegativeOutputNode]
                     [index]
                     += -1;
-            matrix3 [index][1]
-                    += auxiliar->second->value;
+            if (auxiliar->second->parameter.compare("DC") == 0)
+                matrix3 [index][1] += auxiliar->second->value;
+            else if (auxiliar->second->parameter.compare("SIN") == 0) {
+                if ((time_inst < auxiliar->second->atraso) or (time_inst > auxiliar->second->atraso + auxiliar->second->num_de_ciclos/auxiliar->second->freq))
+                    matrix3 [index][1] += auxiliar->second->dc_level + auxiliar->second->ampl * sin(auxiliar->second->angulo * M_PI / 180.0 );
+                else
+                    matrix3 [index][1] += auxiliar->second->dc_level + auxiliar->second->ampl * exp(-(time_inst-auxiliar->second->atraso)*auxiliar->second->atenuacao) * sin(2 * M_PI * auxiliar->second->freq * (time_inst-auxiliar->second->atraso) + auxiliar->second->angulo * M_PI / 180.0);
+            }
             listToPrint[index] = "j" + (auxiliar->first);
             index++;
             break;
@@ -589,84 +631,55 @@ void elementsList::buildModifiedNodalMatrix
             index++;
             break;
           case 'L': case 'C': /* indutor e capacitor*/
-        	  /*capacitorInductor->first = auxiliar ->first; // essa linha ta dando erro
-        	  this->gearMethod (auxiliar, reactiveElements, passo, gear_order, UIC);
-        	  if (auxiliar->second->originNodeOrPositiveOutputNode == 0) {
-        	       if (auxiliar->second->destinationNodeOrNegativeOutputNode == 0)
-        	       break;
-        	       matrix1 [auxiliar->second->destinationNodeOrNegativeOutputNode]
-        	               [auxiliar->second->destinationNodeOrNegativeOutputNode]
-        	               += 1/(auxiliar->second->impedance) ;
-        	       break;
-        	  }
-        	  if (auxiliar->second->destinationNodeOrNegativeOutputNode == 0) {
-        	      if (auxiliar->second->originNodeOrPositiveOutputNode == 0)
-        	      break;
-        	      matrix1 [auxiliar->second->originNodeOrPositiveOutputNode]
-        	      [auxiliar->second->originNodeOrPositiveOutputNode]
-        	      += 1/(auxiliar->second->impedance) ;
-        	      break;
-        	  }
-        	  matrix1 [auxiliar->second->originNodeOrPositiveOutputNode]
-        	          [auxiliar->second->originNodeOrPositiveOutputNode]
-        	          += 1/(auxiliar->second->impedance) ;
+            gearMethod (auxiliar->first, reactiveElements,
+                        passo, gear_order, UIC);
+            if (auxiliar->first[0] == 'C') {
 
-        	  matrix1 [auxiliar->second->destinationNodeOrNegativeOutputNode]
-        	          [auxiliar->second->destinationNodeOrNegativeOutputNode]
-        	          += 1/(auxiliar->second->impedance) ;
+                matrix1 [auxiliar->second->originNodeOrPositiveOutputNode]
+                        [auxiliar->second->originNodeOrPositiveOutputNode]
+                        += 1/auxiliar->second->impedance;
+                matrix1 [auxiliar->second->destinationNodeOrNegativeOutputNode]
+                        [auxiliar->second->destinationNodeOrNegativeOutputNode]
+                        += 1/auxiliar->second->impedance;
+                matrix1 [auxiliar->second->originNodeOrPositiveOutputNode]
+                        [auxiliar->second->destinationNodeOrNegativeOutputNode]
+                        += -1/auxiliar->second->impedance;
+                matrix1 [auxiliar->second->destinationNodeOrNegativeOutputNode]
+                        [auxiliar->second->originNodeOrPositiveOutputNode]
+                        += -1/auxiliar->second->impedance;
 
-        	  matrix1 [auxiliar->second->originNodeOrPositiveOutputNode]
-        	          [auxiliar->second->destinationNodeOrNegativeOutputNode]
-        	          += -1/(auxiliar->second->impedance) ;
+                reactiveElements[auxiliar->first][8] = auxiliar->second->originNodeOrPositiveOutputNode;
+                reactiveElements[auxiliar->first][9] = auxiliar->second->destinationNodeOrNegativeOutputNode;
+                matrix3 [auxiliar->second->originNodeOrPositiveOutputNode][1]
+                        += (auxiliar->second->reactiveValue);
+                matrix3 [auxiliar->second->destinationNodeOrNegativeOutputNode][1]
+                        += -(auxiliar->second->reactiveValue);
 
-        	  matrix1 [auxiliar->second->destinationNodeOrNegativeOutputNode]
-        	          [auxiliar->second->originNodeOrPositiveOutputNode]
-        	          += -1/(auxiliar->second->impedance) ;
-        	  if (auxiliar->first[0] == 'C') {
-        		  capacitorInductor->second[8] = auxiliar->second->originNodeOrPositiveOutputNode;
-        		  capacitorInductor->second[9] = auxiliar->second->destinationNodeOrNegativeOutputNode;
-        		  if (auxiliar->second->originNodeOrPositiveOutputNode == 0) {
-        			  if (auxiliar->second->destinationNodeOrNegativeOutputNode == 0)
-        			  break;
-        			  matrix3 [auxiliar->second->destinationNodeOrNegativeOutputNode][1]
-        			          += -(auxiliar->second->reactiveValue);
-        	          break;
-        	      }
-        	      if (auxiliar->second->destinationNodeOrNegativeOutputNode == 0) {
-        	    	  if (auxiliar->second->originNodeOrPositiveOutputNode == 0)
-        	          break;
-        	          matrix3 [auxiliar->second->originNodeOrPositiveOutputNode][1]
-        	                  += (auxiliar->second->reactiveValue);
-        	         break;
-        	      }
-        	      matrix3 [auxiliar->second->originNodeOrPositiveOutputNode][1]
-        	               += (auxiliar->second->reactiveValue);
-        	      matrix3 [auxiliar->second->destinationNodeOrNegativeOutputNode][1]
-        	               += -(auxiliar->second->reactiveValue);
-        	  }
+            }
+            else {
 
-        	  else{
-        		  capacitorInductor->second[8] = index;
+                reactiveElements[auxiliar->first][8] = index;
 
-        		  matrix1 [index]
-        		          [auxiliar->second->originNodeOrPositiveOutputNode] += -1;
+                matrix1 [index]
+                        [auxiliar->second->originNodeOrPositiveOutputNode]
+                        += -1;
+                matrix1 [index]
+                        [auxiliar->second->destinationNodeOrNegativeOutputNode]
+                        += 1;
+                matrix1 [index]
+                        [index]
+                        += auxiliar->second->impedance;
+                matrix1 [auxiliar->second->originNodeOrPositiveOutputNode]
+                        [index] += 1;
+                matrix1 [auxiliar->second->destinationNodeOrNegativeOutputNode]
+                        [index] += -1;
+                matrix3 [index][1] += auxiliar->second->reactiveValue;
 
-        		  matrix1 [index]
-        		          [auxiliar->second->destinationNodeOrNegativeOutputNode] += +1;
+                listToPrint[index] = 'j' + auxiliar->first;
+                index++;
+            }
 
-        		  matrix1 [auxiliar->second->originNodeOrPositiveOutputNode]
-        		           [index] += 1;
-
-        		  matrix1 [auxiliar->second->destinationNodeOrNegativeOutputNode]
-        		          [index] += -1;
-
-        		  matrix3 [index][1] += -(auxiliar->second->reactiveValue);
-
-        		  listToPrint[index] = 'j' + (auxiliar->first);
-        		  index++;
-        	  }*/
-
-        	  break;
+            break;
         }
     }
 
@@ -677,54 +690,178 @@ void elementsList::buildModifiedNodalMatrix
 
 }
 
+void print_state(capacitor_inductor reactiveElements) {
+    char new_str[13];
+    string header = "";
+    cout << "================================================" << endl;
+    cout << "==  ";
+    for (capacitor_inductor::iterator it = reactiveElements.begin();
+         it != reactiveElements.end();
+         it++) {
+        sprintf(new_str, " %11s", it->first.c_str());
+        header = header + new_str;
+    }
+    cout << header << endl;
+    for (int k=0; k<8; k++) {
+        cout << "==  ";
+        for (capacitor_inductor::iterator it = reactiveElements.begin();
+             it != reactiveElements.end(); it++) {
+            sprintf(new_str, " % 11.4Lg", it->second[k]);
+            cout << new_str;
+        }
+        cout << endl;
+    }
+    cout << "== == == == == == == == == ==" << endl << "==  ";
+    for (capacitor_inductor::iterator it = reactiveElements.begin();
+         it != reactiveElements.end(); it++) {
+        sprintf(new_str, " % 11.4Lg", it->second[8]);
+        cout << new_str;
+    }
+    cout << endl << "==  ";
+    for (capacitor_inductor::iterator it = reactiveElements.begin();
+         it != reactiveElements.end(); it++) {
+        if (it->first[0] == 'C')
+            sprintf(new_str, " % 11.4Lg", it->second[9]);
+        else
+            sprintf(new_str, "            ");
+        cout << new_str;
+    }
+    cout << endl << "================================================" << endl;
+}
+
 /*****************************************************************************/
 /* Funcao responsavel em substituir indutor/capacitor pelo respectivo modelo */
 
-void elementsList :: gearMethod (iterator elementPosition, capacitor_inductor reactiveElements,
-								 long double passo, int gear_order, int UIC) {
+void elementsList::gearMethod(string element_name,
+                              capacitor_inductor reactiveElements,
+                              long double passo, int gear_order, int UIC) {
 
-	map <string, element *> :: iterator auxiliar = elementPosition;
-	map <string, long double[10]> :: iterator element = reactiveElements.begin();
+    long double sourceValue = 0;
 
-	cppmatrix matrixA, matrixB, matrixC;
-    long double fontValue = 0;
+    // gear_coef[8] is the term that multiplies the time step.
+    long double gear_coef[9];
 
-	for (int i=0; i <8; i++){
-		matrixC[i][0] = 0;
-		for (int j=0; j<8; j++){
-			matrixA[i][j] = 0;
-		}
-	}
+    switch (gear_order) {
+      case 1:
+        gear_coef[8] = 1.0;
+        gear_coef[0] = 1.0;
+        gear_coef[1] = 0.0;
+        gear_coef[2] = 0.0;
+        gear_coef[3] = 0.0;
+        gear_coef[4] = 0.0;
+        gear_coef[5] = 0.0;
+        gear_coef[6] = 0.0;
+        gear_coef[7] = 0.0;
+        break;
+      case 2:
+        gear_coef[8] =  ((long double)(2)) / ((long double)(3));
+        gear_coef[0] =  ((long double)(4)) / ((long double)(3));
+        gear_coef[1] = -((long double)(1)) / ((long double)(3));
+        gear_coef[2] = 0.0;
+        gear_coef[3] = 0.0;
+        gear_coef[4] = 0.0;
+        gear_coef[5] = 0.0;
+        gear_coef[6] = 0.0;
+        gear_coef[7] = 0.0;
+        break;
+      case 3:
+        gear_coef[8] =  ((long double)( 6)) / ((long double)(11));
+        gear_coef[0] =  ((long double)(18)) / ((long double)(11));
+        gear_coef[1] = -((long double)( 9)) / ((long double)(11));
+        gear_coef[2] =  ((long double)( 2)) / ((long double)(11));
+        gear_coef[3] = 0.0;
+        gear_coef[4] = 0.0;
+        gear_coef[5] = 0.0;
+        gear_coef[6] = 0.0;
+        gear_coef[7] = 0.0;
+        break;
+      case 4:
+        gear_coef[8] =  ((long double)(12)) / ((long double)(25));
+        gear_coef[0] =  ((long double)(48)) / ((long double)(25));
+        gear_coef[1] = -((long double)(36)) / ((long double)(25));
+        gear_coef[2] =  ((long double)(16)) / ((long double)(25));
+        gear_coef[3] = -((long double)( 3)) / ((long double)(25));
+        gear_coef[4] = 0.0;
+        gear_coef[5] = 0.0;
+        gear_coef[6] = 0.0;
+        gear_coef[7] = 0.0;
+        break;
+      case 5:
+        gear_coef[8] =  ((long double)( 60)) / ((long double)(137));
+        gear_coef[0] =  ((long double)(300)) / ((long double)(137));
+        gear_coef[1] = -((long double)(300)) / ((long double)(137));
+        gear_coef[2] =  ((long double)(200)) / ((long double)(137));
+        gear_coef[3] = -((long double)( 75)) / ((long double)(137));
+        gear_coef[4] =  ((long double)( 12)) / ((long double)(137));
+        gear_coef[5] = 0.0;
+        gear_coef[6] = 0.0;
+        gear_coef[7] = 0.0;
+        break;
+      case 6:
+        gear_coef[8] =  ((long double)( 60)) / ((long double)(147));
+        gear_coef[0] =  ((long double)(360)) / ((long double)(147));
+        gear_coef[1] = -((long double)(450)) / ((long double)(147));
+        gear_coef[2] =  ((long double)(400)) / ((long double)(147));
+        gear_coef[3] = -((long double)(225)) / ((long double)(147));
+        gear_coef[4] =  ((long double)( 72)) / ((long double)(147));
+        gear_coef[5] = -((long double)( 10)) / ((long double)(147));
+        gear_coef[6] = 0.0;
+        gear_coef[7] = 0.0;
+        break;
+      case 7:
+        gear_coef[8] =  0.3856749311292203;
+        gear_coef[0] =  2.6997245179004445;
+        gear_coef[1] = -4.0495867768486979;
+        gear_coef[2] =  4.4995408631693161;
+        gear_coef[3] = -3.3746556473786473;
+        gear_coef[4] =  1.6198347107421940;
+        gear_coef[5] = -0.4499540863173528;
+        gear_coef[6] =  0.0550964187327434;
+        gear_coef[7] =  0.0;
+        break;
+      case 8:
+        gear_coef[8] =  0.3679369250676245;
+        gear_coef[0] =  2.9434954005987457;
+        gear_coef[1] = -5.1511169509341315;
+        gear_coef[2] =  6.8681559346235712;
+        gear_coef[3] = -6.4388961887049154;
+        gear_coef[4] =  4.1208935607669224;
+        gear_coef[5] = -1.7170389836515461;
+        gear_coef[6] =  0.4204993429348310;
+        gear_coef[7] = -0.0459921156334772;
+        break;
+    }
 
-	for (int i=0; i == gear_order; i++){
-		matrixC [i][0] = 1;
-		for (int j=0; j < gear_order; j++){
-			matrixA [i][j]= (-j)^(gear_order);
-		}
-		matrixA [i][gear_order] = gear_order;
-	}
+//     cout << "==================GEAR===================" << endl <<
+//             gear_coef[0] << endl << gear_coef[1] << endl <<
+//             gear_coef[2] << endl << gear_coef[3] << endl <<
+//             gear_coef[4] << endl << gear_coef[5] << endl <<
+//             gear_coef[6] << endl << gear_coef[7] << endl <<
+//             element_name << endl <<
+//             "=========================================" << endl;
 
-	while (auxiliar->first != element->first)
-		element++;
+    for (int i=0; i < gear_order; i++)
+        sourceValue += gear_coef[i] * reactiveElements[element_name][i];
 
-	matrixB = matrixA.solveMatrixSystem(matrixC);
-
-	for (int i=0; i < gear_order; i++)
-		fontValue+= matrixB[i][0] * element->second[i];
-
-	auxiliar->second->impedance =  matrixB[gear_order][0] * passo * 1/(auxiliar->second->value);
-
-	if (auxiliar->first[0] == 'L' )
-		auxiliar->second->reactiveValue = fontValue * auxiliar->second->impedance;
-	else
-		auxiliar->second->reactiveValue = fontValue / auxiliar->second->impedance;
+    if (element_name[0] == 'L') {
+        (*this)[element_name]->impedance = ((*this)[element_name]->value)/(gear_coef[8] * passo);
+        (*this)[element_name]->reactiveValue = sourceValue * (*this)[element_name]->impedance;
+//         cout << "IMP:  " << (*this)[element_name]->impedance << endl;
+//         cout << "REAC: " << (*this)[element_name]->reactiveValue << endl;
+    }
+    else {
+        (*this)[element_name]->impedance = gear_coef[8] * passo / ((*this)[element_name]->value);
+        (*this)[element_name]->reactiveValue = sourceValue / (*this)[element_name]->impedance;
+//         cout << "IMP:  " << (*this)[element_name]->impedance << endl;
+//         cout << "REAC: " << (*this)[element_name]->reactiveValue << endl;
+    }
 
 }
 
 
 /****************************************************************************************************/
 
-/* Funcao responsavel em imprimir o resultado em um arquivo */
+/* Função responsavel em imprimir o resultado em um arquivo */
 // void elementsList :: printResult (string netlist_filename, tensionAndCurrent listToPrint, cppmatrix matrix2) {
 //
 //     map <int, string> :: iterator list;
