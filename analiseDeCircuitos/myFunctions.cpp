@@ -137,7 +137,7 @@ void cppmatrix::fill_out_with_zeros(int rows, int cols) {
     n = rows;
     m = cols;
     for (int i=1; i<=n; i++) {
-        if (this->count(i) == 0) // if this row is empty, then...
+        if (this->count(i) == 0) // if this row is empty...
             for (int j=1; j<=m; j++)
                 (*this)[i][j] = 0;
         else
@@ -285,8 +285,21 @@ void elementsList::getElement (string line) {
             (*this)[elementName]->value = strtold(split_line[4].c_str(), NULL);
         }
         else if (split_line[3].compare("PULSE") == 0) {
-            cerr << "NAO TEM FONTE PULSE AINDA" << endl;
-            exit(BAD_NETLIST);
+            if (qty_of_args != 11) {
+                cerr << "Erro na leitura do arquivo."
+                << " Maneira correta de especificar a fonte pulsada:"
+                << endl << elementName << " <no+> <no-> PULSE <amplit. 1> <amplt. 2> <atraso> <tempo subida> <tempo ligada> <período> <num. de ciclos>"
+                << endl;
+                exit(BAD_NETLIST);
+            }
+            (*this)[elementName]->ampl = strtold(split_line[4].c_str(), NULL);
+            (*this)[elementName]->ampl2 = strtold(split_line[5].c_str(), NULL);
+            (*this)[elementName]->atraso = strtold(split_line[6].c_str(), NULL);
+            (*this)[elementName]->t_rise = strtold(split_line[7].c_str(), NULL);
+            (*this)[elementName]->t_fall = strtold(split_line[8].c_str(), NULL);
+            (*this)[elementName]->t_ligada = strtold(split_line[9].c_str(), NULL);
+            (*this)[elementName]->periodo = strtold(split_line[10].c_str(), NULL);
+            (*this)[elementName]->num_de_ciclos = strtold(split_line[11].c_str(), NULL);
         }
         else if (split_line[3].compare("SIN") == 0) {
             if (qty_of_args != 10) {
@@ -611,6 +624,22 @@ void elementsList::buildModifiedNodalMatrix
                 else
                     matrix3 [index][1] += auxiliar->second->dc_level + auxiliar->second->ampl * exp(-(time_inst-auxiliar->second->atraso)*auxiliar->second->atenuacao) * sin(2 * M_PI * auxiliar->second->freq * (time_inst-auxiliar->second->atraso) + auxiliar->second->angulo * M_PI / 180.0);
             }
+            else if (auxiliar->second->parameter.compare("PULSE") == 0) {
+                if ((time_inst < auxiliar->second->atraso) or (time_inst > auxiliar->second->atraso + auxiliar->second->num_de_ciclos*auxiliar->second->freq))
+                    matrix3 [index][1] += auxiliar->second->ampl;
+                else {
+                    long double t_mod_per = (time_inst-auxiliar->second->atraso) - auxiliar->second->periodo * floor((time_inst-auxiliar->second->atraso)/auxiliar->second->periodo);
+                    if (t_mod_per < auxiliar->second->t_rise)
+                        matrix3 [index][1] += auxiliar->second->ampl + (auxiliar->second->ampl2 - auxiliar->second->ampl)*t_mod_per/auxiliar->second->t_rise;
+                    else if (t_mod_per <= auxiliar->second->t_rise + auxiliar->second->t_ligada)
+                        matrix3 [index][1] += auxiliar->second->ampl2;
+                    else if (t_mod_per < auxiliar->second->t_rise + auxiliar->second->t_ligada + auxiliar->second->t_fall)
+                        matrix3 [index][1] += auxiliar->second->ampl2 - (auxiliar->second->ampl2 - auxiliar->second->ampl)*(t_mod_per-(auxiliar->second->t_rise + auxiliar->second->t_ligada))/auxiliar->second->t_fall;
+                    else
+                        matrix3 [index][1] += auxiliar->second->ampl;
+                }
+            }
+            else exit(UNKNOWN_ERROR);
             listToPrint[index] = "j" + (auxiliar->first);
             index++;
             break;
