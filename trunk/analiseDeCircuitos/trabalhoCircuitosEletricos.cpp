@@ -11,6 +11,11 @@
 
 using namespace std;
 
+inline
+string rm_filename_extension(string filename) {
+    return filename.substr(0,filename.find('.'));
+}
+
 int main (int argc, char *argv[]) {
 
     ifstream myFile;
@@ -59,6 +64,8 @@ int main (int argc, char *argv[]) {
     while (myFile.good()) {
         int qty_of_words;
         getline(myFile, line);
+        if (line[line.length()-1] == '\r')
+            line = line.substr(0,line.length()-1);
 //         cout << "Lida a linha [" << line << "]" << endl;
         if (line.size() == 0) continue;
         split_line = split(line, qty_of_words);
@@ -111,7 +118,7 @@ int main (int argc, char *argv[]) {
 
     myFile.close();
 
-    cout << endl;
+//     cout << endl;
 
 //     for (elementsList::iterator i = list.begin(); i != list.end(); i++) {
 //         cout << i->first << ":";
@@ -138,29 +145,33 @@ int main (int argc, char *argv[]) {
                 reactiveElements[list_iter->first][k] = 0;
     }
 
-    output_filename = input_filename + "_answer.m";
+#ifdef OUTPUT_MATLAB
+    output_filename = rm_filename_extension(input_filename) + "_answer.m";
+#else
+    output_filename = rm_filename_extension(input_filename) + "_answer.txt";
+#endif
     answerFile.open (output_filename.c_str());
 
     // pré-simulação
     {
 
-        char new_str[13];
+        char new_str[25];
         list.buildModifiedNodalMatrix(listToPrint, matrix1, matrix3,
                                       reactiveElements,
-                                      passo/(passos_internos+1)/1000.0,
+                                      passo/passos_internos/1000000000.0,
                                       gear_order, UIC, 0);
 
 #ifdef OUTPUT_MATLAB
-        string header = "A=[%       t";
+        string header = "A=[%               t";
 #else
-        string header = "           t";
+        string header = "                   t";
 #endif
         for (int i = 1; i <= list.numberOfNodes(); i++) {
-            sprintf(new_str, " %11d", i);
+            sprintf(new_str, " %19d", i);
             header = header + new_str;
         }
         for (int i = list.numberOfNodes()+1; i <= matrix1.n; i++) {
-            sprintf(new_str, " %11s", listToPrint[i].c_str());
+            sprintf(new_str, " %19s", listToPrint[i].c_str());
             header = header + new_str;
         }
         answerFile << header << endl;
@@ -170,9 +181,9 @@ int main (int argc, char *argv[]) {
 
         matrix2 = matrix1.solveMatrixSystem(matrix3);
 
-        answerFile << "           0";
+        answerFile << "                   0";
         for (int i = 1; i <= matrix1.n; i++) {
-            sprintf(new_str, " % 11.4Lg", matrix2[i][1]);
+            sprintf(new_str, " % 19.12Lg", matrix2[i][1]);
             answerFile << new_str;
         }
         answerFile << endl;
@@ -196,12 +207,12 @@ int main (int argc, char *argv[]) {
     }
 
     for (long int i = 1;
-         i <= tempo_final*(passos_internos + 1)/passo; i++) {
+         i <= tempo_final*passos_internos/passo; i++) {
 
-        char new_str[13];
+        char new_str[25];
         list.buildModifiedNodalMatrix(listToPrint, matrix1, matrix3,
-                                      reactiveElements, passo/(passos_internos+1),
-                                      gear_order, UIC, i*passo/(passos_internos+1));
+                                      reactiveElements, passo/passos_internos,
+                                      gear_order, UIC, i*passo/passos_internos);
 
 //         if (i==1) {        matrix1.printMyself(); cout << endl;
 //         matrix3.printMyself(); cout << endl;
@@ -209,11 +220,11 @@ int main (int argc, char *argv[]) {
 
         matrix2 = matrix1.solveMatrixSystem(matrix3);
 
-        if (i % (passos_internos+1) == 0) {
-            sprintf(new_str, " % 11.4Lg", i*passo/(passos_internos+1));
+        if (i % passos_internos == 0) {
+            sprintf(new_str, " % 19.12Lg", i*passo/passos_internos);
             answerFile << new_str;
             for (int k = 1; k <= matrix1.n; k++) {
-                sprintf(new_str, " % 11.4Lg", matrix2[k][1]);
+                sprintf(new_str, " % 19.12Lg", matrix2[k][1]);
                 answerFile << new_str;
             }
             answerFile << endl;

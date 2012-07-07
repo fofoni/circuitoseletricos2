@@ -2,4 +2,4 @@ oscilador com amplitude crescente
 
 V1 1 0 SIN 1 1 1 1 0.1 30 7.5
 
-.TRAN .01 10 GEAR4 0 UIC
+.TRAN .01 10 GEAR4 1 UIC

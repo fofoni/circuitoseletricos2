@@ -10,7 +10,7 @@
 #ifndef     CIRCUITSANALYSES_H_
 #define     CIRCUITSANALYSES_H_
 
-#define _XOPEN_SOURCE 600
+#define _XOPEN_SOURCE 601
 
 #include <iostream>
 #include <istream>
@@ -30,9 +30,10 @@ using namespace std;
 #define     BAD_NETLIST             2
 #define     NON_SQUARE_MATRIX_QR    3
 #define     SINGULAR_LINEAR_SYSTEM  4
+#define     UNKNOWN_ERROR           5
 
 #ifdef CHANGE_STRTOLD
-# define strtold(x,y) ((long double)atof((x)))
+# define strtold(x,y) ((long double)(strtod((x),(y))))
 #endif
 
 #ifndef M_PI
@@ -49,7 +50,10 @@ using namespace std;
 #define     capacitor_inductor      map<string, map<int, long double> >
 
 void print_state(capacitor_inductor reactiveElements);
+
 map<int, string> split(string str, int &i, char delim = ' ');
+
+string rm_filename_extension(string filename);
 
 /* Classe que possui os parametros de todos os
    possiveis elementos dentro de um netlist */
@@ -81,11 +85,18 @@ class element {
         long double atenuacao;
         long double angulo;
         long double num_de_ciclos;
+
+        // fonte pulse
+        long double ampl2;
+        long double t_rise;
+        long double t_fall;
+        long double t_ligada;
+        long double periodo;
     };
 
 /* Classe que vai conter as matrizes da analise modificada,
    formada a partir das estampas dos elementos */
-                               /* row, column, content */
+                          /* row,  column, content */
 class cppmatrix : public map<int, map<int, long double> > {
   public:
     int n,m;
