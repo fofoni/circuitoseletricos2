@@ -24,7 +24,7 @@
 #include <stdlib.h>
 #include <math.h>
 
-using namespace std;
+using namespace std; 
 
 #define     FILE_IS_NOT_OPEN        1
 #define     BAD_NETLIST             2
