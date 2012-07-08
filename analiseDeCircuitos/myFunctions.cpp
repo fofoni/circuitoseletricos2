@@ -36,6 +36,14 @@ cppmatrix cppmatrix::operator+ (cppmatrix parcela) {
             resultado[i][j] = (*this)[i][j] + parcela[i][j];
     return resultado;
 }
+cppmatrix cppmatrix::operator- (cppmatrix parcela) {
+    cppmatrix resultado;
+    resultado.initialize(n,m);
+    for (int i = 1; i <= n; i++)
+        for (int j = 1; j <= m; j++)
+            resultado[i][j] = (*this)[i][j] - parcela[i][j];
+    return resultado;
+}
 
 cppmatrix cppmatrix::operator* (cppmatrix fator) {
     cppmatrix resultado;
@@ -179,7 +187,6 @@ element::element () {
     controledOriginNodeOrPositiveInputNode      = -1;
     controledDestinationNodeOrNegativeInputNode = -1;
     initialConditions                           = -1;
-    pairsOfValues                               = "";
     parameter                                   = "";
     nocrtlPositive                              = -1;
     nocrtlNegative                              = -1;
@@ -202,8 +209,6 @@ void element::printMyself() {
             controledDestinationNodeOrNegativeInputNode << endl;
     cout << "  initialConditions                           = " <<
             initialConditions << endl;
-    cout << "  pairsOfValues                               = [" <<
-            pairsOfValues << "]" << endl;
     cout << "  parameter                                   = [" <<
             parameter << "]" << endl;
     cout << "  nocrtlPositive                              = " <<
@@ -361,6 +366,32 @@ void elementsList::getElement (string line) {
         }
         break;
 
+      case 'N':
+	    if (qty_of_args != 10) {
+            cerr << "Erro na leitura do arquivo."
+                 << " Maneira correta de especificar um resistor nao-linear:"
+			     << endl << elementName[0]
+                 << " <nó1> <nó2> <quatro pares de valores vi ji>" << endl;
+            exit(BAD_NETLIST);
+        }
+	  (*this)[elementName]->originNodeOrPositiveOutputNode = atoi(split_line[1].c_str());
+	  (*this)[elementName]->destinationNodeOrNegativeOutputNode = atoi(split_line[2].c_str());
+	  (*this)[elementName]->tensoes[0] = strtold(split_line[3].c_str(), NULL);
+	  (*this)[elementName]->correntes[0] = strtold(split_line[4].c_str(), NULL);
+	  (*this)[elementName]->tensoes[1] = strtold(split_line[5].c_str(), NULL);
+	  (*this)[elementName]->correntes[1] = strtold(split_line[6].c_str(), NULL);
+	  (*this)[elementName]->tensoes[2] = strtold(split_line[7].c_str(), NULL);
+	  (*this)[elementName]->correntes[2] = strtold(split_line[8].c_str(), NULL);
+	  (*this)[elementName]->tensoes[3] = strtold(split_line[9].c_str(), NULL);
+	  (*this)[elementName]->correntes[3] = strtold(split_line[10].c_str(), NULL);
+	  for (int k=0;k<3;k++) {
+	      (*this)[elementName]->condutancia[k] = ((*this)[elementName]->correntes[k] - (*this)[elementName]->correntes[k])/
+			                                     ((*this)[elementName]->tensoes[k] - (*this)[elementName]->tensoes[k]);
+	      (*this)[elementName]->fonte_corrente[k] = (*this)[elementName]->correntes[k] -
+	    		                                    (*this)[elementName]->condutancia[k] * (*this)[elementName]->tensoes[k];
+	  }
+	  break;
+
       default:
         cout << "Element " << elementName << " not implemented (yet?)" << endl;
         exit(BAD_NETLIST);
@@ -424,7 +455,7 @@ string elementsList::locateCurrent (int node1, int node2){
  * respectivamente, as matrizes A e B do sistema A x = B.
  */
 void elementsList::buildModifiedNodalMatrix
-    (tensionAndCurrent& listToPrint, cppmatrix& matrix1, cppmatrix& matrix3,
+    (tensionAndCurrent& listToPrint, cppmatrix& matrix1, cppmatrix matrix2, cppmatrix& matrix3,
     capacitor_inductor& reactiveElements, long double passo, int gear_order,
     int UIC, long double time_inst) {
 
@@ -468,6 +499,31 @@ void elementsList::buildModifiedNodalMatrix
                     [auxiliar->second->originNodeOrPositiveOutputNode]
                     += -1/(auxiliar->second->value) ;
             break;
+          case 'N':
+            {
+              long double queda_de_tensao = matrix2[auxiliar->second->originNodeOrPositiveOutputNode][1]-matrix2[auxiliar->second->destinationNodeOrNegativeOutputNode][1];
+              int regiao;
+              if (queda_de_tensao < auxiliar->second->tensoes[1]) regiao=0;
+              else if (queda_de_tensao > auxiliar->second->tensoes[2]) regiao=2;
+              else regiao=1;
+              matrix1 [auxiliar->second->originNodeOrPositiveOutputNode]
+                      [auxiliar->second->originNodeOrPositiveOutputNode]
+                      += auxiliar->second->condutancia[regiao];
+              matrix1 [auxiliar->second->destinationNodeOrNegativeOutputNode]
+                      [auxiliar->second->destinationNodeOrNegativeOutputNode]
+                      += auxiliar->second->condutancia[regiao];
+              matrix1 [auxiliar->second->originNodeOrPositiveOutputNode]
+                      [auxiliar->second->destinationNodeOrNegativeOutputNode]
+                      += - auxiliar->second->condutancia[regiao];
+              matrix1 [auxiliar->second->destinationNodeOrNegativeOutputNode]
+                      [auxiliar->second->originNodeOrPositiveOutputNode]
+                      += - auxiliar->second->condutancia[regiao];
+              matrix3 [auxiliar->second->originNodeOrPositiveOutputNode][1]
+                      += - auxiliar->second->fonte_corrente[regiao];
+              matrix3 [auxiliar->second->destinationNodeOrNegativeOutputNode][1]
+                      += auxiliar->second->fonte_corrente[regiao];
+            }
+        	break;
           case 'E': /* Fonte de tensao controlada a tensao */
             matrix1 [index]
                     [auxiliar->second->originNodeOrPositiveOutputNode]
@@ -625,7 +681,9 @@ void elementsList::buildModifiedNodalMatrix
                     matrix3 [index][1] += auxiliar->second->dc_level + auxiliar->second->ampl * exp(-(time_inst-auxiliar->second->atraso)*auxiliar->second->atenuacao) * sin(2 * M_PI * auxiliar->second->freq * (time_inst-auxiliar->second->atraso) + auxiliar->second->angulo * M_PI / 180.0);
             }
             else if (auxiliar->second->parameter.compare("PULSE") == 0) {
-                if ((time_inst < auxiliar->second->atraso) or (time_inst > auxiliar->second->atraso + auxiliar->second->num_de_ciclos*auxiliar->second->freq))
+            	//cout << time_inst << "; atraso=" << auxiliar->second->atraso << " numciclos=" << auxiliar->second->num_de_ciclos << " per=" << auxiliar->second->periodo << endl;
+            	//cout << ;
+                if ((time_inst < auxiliar->second->atraso) or (time_inst > auxiliar->second->atraso + auxiliar->second->num_de_ciclos*auxiliar->second->periodo))
                     matrix3 [index][1] += auxiliar->second->ampl;
                 else {
                     long double t_mod_per = (time_inst-auxiliar->second->atraso) - auxiliar->second->periodo * floor((time_inst-auxiliar->second->atraso)/auxiliar->second->periodo);
