@@ -7,6 +7,10 @@
  * Programa de análise de circuitos no tempo para estudar os métodos de Gear
  */
 
+// Se, durante o newton raphson, o sistema ficar singular, faz o
+// solveMatrixSystem retornar um bool por parametro dizendo que deu singular,
+// e ai tem que testar outro chute inicial
+
 #ifndef     CIRCUITSANALYSES_H_
 #define     CIRCUITSANALYSES_H_
 
@@ -31,6 +35,9 @@ using namespace std;
 #define     NON_SQUARE_MATRIX_QR    3
 #define     SINGULAR_LINEAR_SYSTEM  4
 #define     UNKNOWN_ERROR           5
+
+#define CHANGE_STRTOLD
+#define OUTPUT_MATLAB
 
 #ifdef CHANGE_STRTOLD
 # define strtold(x,y) ((long double)(strtod((x),(y))))
@@ -65,15 +72,23 @@ class element {
         int     controledOriginNodeOrPositiveInputNode;
         int     controledDestinationNodeOrNegativeInputNode;
         long double   initialConditions;
-        string  pairsOfValues;
         string  parameter;
         int     nocrtlPositive;
         int     nocrtlNegative;
         long double   gon;
         long double   goff;
         long double   vref;
+
+        // res nao linear
+        long double   tensoes[4];
+        long double   correntes[4];
+        long double   condutancia[3];
+        long double   fonte_corrente[3];
+
+        // elementos reativos
         long double   reactiveValue;
         long double   impedance;
+
         void    printMyself();
         element();
 
@@ -101,6 +116,7 @@ class cppmatrix : public map<int, map<int, long double> > {
   public:
     int n,m;
     cppmatrix operator + (cppmatrix);
+    cppmatrix operator - (cppmatrix);
     cppmatrix operator * (cppmatrix);
     cppmatrix operator * (long double);
     cppmatrix t(); // transpose
@@ -122,7 +138,7 @@ class elementsList : public map<string, element*> {
     void	gearMethod (string element_name,
                         capacitor_inductor, long double, int, int);
     void    buildModifiedNodalMatrix (tensionAndCurrent&,
-                                      cppmatrix&, cppmatrix&,
+                                      cppmatrix&, cppmatrix, cppmatrix&,
                                       capacitor_inductor&,
                                       long double, int, int, long double);
     //void    printResult (char**, tensionAndCurrent, cppmatrix);
