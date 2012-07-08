@@ -22,9 +22,11 @@ int main (int argc, char *argv[]) {
     string line;
     elementsList list;
     tensionAndCurrent   listToPrint;
+    
+    // sistema linear: Ax = b
     cppmatrix           matrix1; /* A */
     cppmatrix           matrix2; /* x */
-    cppmatrix           matrix3; /* B */
+    cppmatrix           matrix3; /* b */
     capacitor_inductor  reactiveElements;
 
     ofstream answerFile;
@@ -40,8 +42,8 @@ int main (int argc, char *argv[]) {
     map<int, string> split_line;
 
     if (argc < 2) {
-        cerr << "Usage:" << endl;
-        cerr << "  " << argv[0] << " <netlist file>" << endl;
+        cout << "Usage:" << endl;
+        cout << "  " << argv[0] << " <netlist file>" << endl;
         return FILE_IS_NOT_OPEN;
     }
 
@@ -49,7 +51,7 @@ int main (int argc, char *argv[]) {
     myFile.open (input_filename.c_str());
 
     if (!(myFile.is_open())) {
-        cerr << "Erro (" << errno << "): " << /*strerror (errno) <<*/ "." << endl;
+        cout << "Erro (" << errno << "): " << strerror (errno) << "." << endl;
         exit (FILE_IS_NOT_OPEN);
     }
 
@@ -77,39 +79,40 @@ int main (int argc, char *argv[]) {
             list.getElement (line); break;
           case '.':
             if (qty_of_words != 4 && qty_of_words != 5) {
-                cerr << ".TRAN <passo> <tempo final> GEAR[<n>] <passos internos> [UIC]" << endl;
+                cout << ".TRAN <passo> <tempo final> GEAR[<n>] <passos internos> [UIC]" << endl;
                 exit(BAD_NETLIST);
             }
             if (split_line[0].compare(".TRAN") !=  0) {
-                cerr << "Simulacao '" << split_line[0] << "' nao reconhecida." << endl;
+                cout << "Simulacao '" << split_line[0] << "' nao reconhecida." << endl;
                 exit(BAD_NETLIST);
             }
             passo = strtold(split_line[1].c_str(), NULL);
             tempo_final = strtold(split_line[2].c_str(), NULL);
             if (split_line[3].size() < 4 ||
                 split_line[3].substr(0, 4).compare("GEAR") != 0) {
-                cerr << "Metodo '" << split_line[3] << "' nao reconhecido." << endl;
+                cout << "Metodo '" << split_line[3] << "' nao reconhecido." << endl;
                 exit(BAD_NETLIST);
             }
             if (split_line[3].size() == 4) gear_order = 2;
             else gear_order = atoi(split_line[3].substr(4).c_str());
             if (gear_order < 1 || gear_order > 8) {
-                cerr << "A ordem do metodo de GEAR deve estar entre 1 e 8" << endl;
+                cout << "A ordem do metodo de GEAR deve estar entre 1 e 8" << endl;
                 exit(BAD_NETLIST);
             }
             passos_internos = atoi(split_line[4].c_str());
             if (qty_of_words == 4) UIC = 0;
             else {
                 if (split_line[5].compare("UIC") != 0) {
-                    cerr << "Comando '" << split_line[5] << "' nao reconhecido." << endl;
+                    cout << "Comando '" << split_line[5] << "' nao reconhecido." << endl;
                     exit(BAD_NETLIST);
                 }
                 UIC = 1;
 
             }
+            break;
           case '*': case '#': break; // comentarios da netlist
           default:
-            cerr << "Esse elemento " << split_line[0]
+            cout << "Esse elemento " << split_line[0]
                  << " nao esta implementado." << endl;
             exit(BAD_NETLIST);
             break;
@@ -117,6 +120,7 @@ int main (int argc, char *argv[]) {
     }
 
     myFile.close();
+
 
 //     cout << endl;
 
@@ -127,7 +131,7 @@ int main (int argc, char *argv[]) {
 //     }
 
     if (UIC == -1) {
-        cerr << "Nenhuma simulacao a ser feita." << endl;
+        cout << "Nenhuma simulacao a ser feita." << endl;
         exit(BAD_NETLIST);
     }
 
@@ -156,10 +160,45 @@ int main (int argc, char *argv[]) {
     {
 
         char new_str[25];
-        list.buildModifiedNodalMatrix(listToPrint, matrix1, matrix3,
-                                      reactiveElements,
-                                      passo/passos_internos/1000000000.0,
-                                      gear_order, UIC, 0);
+        cppmatrix solucao_anterior;
+        long double erro;
+
+        matrix2.initialize(list.numberOfNodes(), 1);
+
+		list.buildModifiedNodalMatrix(listToPrint, matrix1, matrix2, matrix3,
+									  reactiveElements,
+									  passo/passos_internos/1000000000.0,
+									  gear_order, UIC, 0);
+		solucao_anterior = matrix1.solveMatrixSystem(matrix3);
+
+        cout << "                   0";
+        for (int i = 1; i <= matrix1.n; i++) {
+            sprintf(new_str, " % 19.12Lg", matrix2[i][1]);
+            cout << new_str;
+        }
+        cout << endl;
+
+        do {
+
+	        cout << "                   0";
+	        for (int i = 1; i <= matrix1.n; i++) {
+	            sprintf(new_str, " % 19.12Lg", matrix2[i][1]);
+	            cout << new_str;
+	        }
+	        cout << endl;
+
+			list.buildModifiedNodalMatrix(listToPrint, matrix1, solucao_anterior, matrix3,
+										  reactiveElements,
+										  passo/passos_internos/1000000000.0,
+										  gear_order, UIC, 0);
+
+			matrix2 = matrix1.solveMatrixSystem(matrix3);
+
+			erro = sqrt(((matrix2-solucao_anterior).t() * (matrix2-solucao_anterior))[1][1]);
+
+			solucao_anterior = matrix2;
+
+        } while (erro > 1e-9);
 
 #ifdef OUTPUT_MATLAB
         string header = "A=[%               t";
@@ -179,8 +218,6 @@ int main (int argc, char *argv[]) {
         //matrix1.printMyself(); cout << endl;
         //matrix3.printMyself(); cout << endl;
 
-        matrix2 = matrix1.solveMatrixSystem(matrix3);
-
         answerFile << "                   0";
         for (int i = 1; i <= matrix1.n; i++) {
             sprintf(new_str, " % 19.12Lg", matrix2[i][1]);
@@ -192,11 +229,11 @@ int main (int argc, char *argv[]) {
              reactive_iter != reactiveElements.end();
              reactive_iter++) {
             if (reactive_iter->first[0] == 'L')
-                reactive_iter->second[0] = matrix2[reactive_iter->second[8]][1];
+                reactive_iter->second[0] = matrix2[int(reactive_iter->second[8])][1];
             else {
                 matrix2[0][1] = 0;
-                reactive_iter->second[0] = matrix2[reactive_iter->second[8]][1]
-                                         - matrix2[reactive_iter->second[9]][1];
+                reactive_iter->second[0] = matrix2[int(reactive_iter->second[8])][1]
+                                         - matrix2[int(reactive_iter->second[9])][1];
             }
             reactive_iter->second[7] = reactive_iter->second[6] =
             reactive_iter->second[5] = reactive_iter->second[4] =
@@ -206,18 +243,16 @@ int main (int argc, char *argv[]) {
 
     }
 
+    return 0;
+
     for (long int i = 1;
          i <= tempo_final*passos_internos/passo; i++) {
 
         char new_str[25];
-        list.buildModifiedNodalMatrix(listToPrint, matrix1, matrix3,
+
+        list.buildModifiedNodalMatrix(listToPrint, matrix1, matrix2, matrix3,
                                       reactiveElements, passo/passos_internos,
                                       gear_order, UIC, i*passo/passos_internos);
-
-//         if (i==1) {        matrix1.printMyself(); cout << endl;
-//         matrix3.printMyself(); cout << endl;
-//         }
-
         matrix2 = matrix1.solveMatrixSystem(matrix3);
 
         if (i % passos_internos == 0) {
@@ -241,11 +276,11 @@ int main (int argc, char *argv[]) {
             reactive_iter->second[2] = reactive_iter->second[1];
             reactive_iter->second[1] = reactive_iter->second[0];
             if (reactive_iter->first[0] == 'L')
-                reactive_iter->second[0] = matrix2[reactive_iter->second[8]][1];
+                reactive_iter->second[0] = matrix2[int(reactive_iter->second[8])][1];
             else {
                 matrix2[0][1] = 0;
-                reactive_iter->second[0] = matrix2[reactive_iter->second[8]][1]
-                                         - matrix2[reactive_iter->second[9]][1];
+                reactive_iter->second[0] = matrix2[int(reactive_iter->second[8])][1]
+                                         - matrix2[int(reactive_iter->second[9])][1];
             }
         }
 
@@ -270,9 +305,7 @@ int main (int argc, char *argv[]) {
 
     answerFile.close();
 
-#if !(defined(unix) || defined(__unix__) || defined(__unix))
-    cin.get();
-#endif
+    cout << "Simulação sucedida. Arquivo salvo em " << output_filename << endl;
 
     return 0;
 }
