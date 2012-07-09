@@ -367,30 +367,48 @@ void elementsList::getElement (string line) {
         break;
 
       case 'N':
-	    if (qty_of_args != 10) {
+        if (qty_of_args != 10) {
             cerr << "Erro na leitura do arquivo."
-                 << " Maneira correta de especificar um resistor nao-linear:"
-			     << endl << elementName[0]
-                 << " <nó1> <nó2> <quatro pares de valores vi ji>" << endl;
+                << " Maneira correta de especificar um resistor nao-linear:"
+                << endl << elementName[0]
+                << " <nó1> <nó2> <quatro pares de valores vi ji>" << endl;
             exit(BAD_NETLIST);
         }
-	  (*this)[elementName]->originNodeOrPositiveOutputNode = atoi(split_line[1].c_str());
-	  (*this)[elementName]->destinationNodeOrNegativeOutputNode = atoi(split_line[2].c_str());
-	  (*this)[elementName]->tensoes[0] = strtold(split_line[3].c_str(), NULL);
-	  (*this)[elementName]->correntes[0] = strtold(split_line[4].c_str(), NULL);
-	  (*this)[elementName]->tensoes[1] = strtold(split_line[5].c_str(), NULL);
-	  (*this)[elementName]->correntes[1] = strtold(split_line[6].c_str(), NULL);
-	  (*this)[elementName]->tensoes[2] = strtold(split_line[7].c_str(), NULL);
-	  (*this)[elementName]->correntes[2] = strtold(split_line[8].c_str(), NULL);
-	  (*this)[elementName]->tensoes[3] = strtold(split_line[9].c_str(), NULL);
-	  (*this)[elementName]->correntes[3] = strtold(split_line[10].c_str(), NULL);
-	  for (int k=0;k<3;k++) {
-	      (*this)[elementName]->condutancia[k] = ((*this)[elementName]->correntes[k] - (*this)[elementName]->correntes[k])/
-			                                     ((*this)[elementName]->tensoes[k] - (*this)[elementName]->tensoes[k]);
-	      (*this)[elementName]->fonte_corrente[k] = (*this)[elementName]->correntes[k] -
-	    		                                    (*this)[elementName]->condutancia[k] * (*this)[elementName]->tensoes[k];
-	  }
-	  break;
+        (*this)[elementName]->originNodeOrPositiveOutputNode = atoi(split_line[1].c_str());
+        (*this)[elementName]->destinationNodeOrNegativeOutputNode = atoi(split_line[2].c_str());
+        (*this)[elementName]->tensoes[0] = strtold(split_line[3].c_str(), NULL);
+        (*this)[elementName]->correntes[0] = strtold(split_line[4].c_str(), NULL);
+        (*this)[elementName]->tensoes[1] = strtold(split_line[5].c_str(), NULL);
+        (*this)[elementName]->correntes[1] = strtold(split_line[6].c_str(), NULL);
+        (*this)[elementName]->tensoes[2] = strtold(split_line[7].c_str(), NULL);
+        (*this)[elementName]->correntes[2] = strtold(split_line[8].c_str(), NULL);
+        (*this)[elementName]->tensoes[3] = strtold(split_line[9].c_str(), NULL);
+        (*this)[elementName]->correntes[3] = strtold(split_line[10].c_str(), NULL);
+        for (int k=0;k<3;k++) {
+            (*this)[elementName]->condutancia[k] = ((*this)[elementName]->correntes[k+1] - (*this)[elementName]->correntes[k])/
+                                                   ((*this)[elementName]->tensoes[k+1] - (*this)[elementName]->tensoes[k]);
+            (*this)[elementName]->fonte_corrente[k] = (*this)[elementName]->correntes[k] -
+                                                      (*this)[elementName]->condutancia[k] * (*this)[elementName]->tensoes[k];
+        }
+
+//         cout << "=============== RES NÃO LINEAR =================" << endl;
+//         cout << (*this)[elementName]->originNodeOrPositiveOutputNode; cout << endl;
+//         cout << (*this)[elementName]->destinationNodeOrNegativeOutputNode; cout << endl;
+//         cout << (*this)[elementName]->tensoes[0]; cout << endl;
+//         cout << (*this)[elementName]->correntes[0]; cout << endl;
+//         cout << (*this)[elementName]->tensoes[1]; cout << endl;
+//         cout << (*this)[elementName]->correntes[1]; cout << endl;
+//         cout << (*this)[elementName]->tensoes[2]; cout << endl;
+//         cout << (*this)[elementName]->correntes[2]; cout << endl;
+//         cout << (*this)[elementName]->tensoes[3]; cout << endl;
+//         cout << (*this)[elementName]->correntes[3]; cout << endl;
+//         for (int k=0;k<3;k++) {
+//             cout << (*this)[elementName]->condutancia[k]; cout << endl;
+//             cout << (*this)[elementName]->fonte_corrente[k]; cout << endl;
+//         }
+//         cout << "=============== RES NÃO LINEAR =================" << endl;
+
+        break;
 
       default:
         cout << "Element " << elementName << " not implemented (yet?)" << endl;
@@ -506,6 +524,7 @@ void elementsList::buildModifiedNodalMatrix
               if (queda_de_tensao < auxiliar->second->tensoes[1]) regiao=0;
               else if (queda_de_tensao > auxiliar->second->tensoes[2]) regiao=2;
               else regiao=1;
+//               cout << "no+=" << matrix2[auxiliar->second->originNodeOrPositiveOutputNode][1] << " no-=" << matrix2[auxiliar->second->destinationNodeOrNegativeOutputNode][1] << " regiao:"<<regiao<<endl;
               matrix1 [auxiliar->second->originNodeOrPositiveOutputNode]
                       [auxiliar->second->originNodeOrPositiveOutputNode]
                       += auxiliar->second->condutancia[regiao];
@@ -653,6 +672,22 @@ void elementsList::buildModifiedNodalMatrix
                     else
                         valor_da_fonte = auxiliar->second->dc_level + auxiliar->second->ampl * exp(-(time_inst-auxiliar->second->atraso)*auxiliar->second->atenuacao) * sin(2 * M_PI * auxiliar->second->freq * (time_inst-auxiliar->second->atraso) + auxiliar->second->angulo * M_PI / 180.0);
                 }
+                else if (auxiliar->second->parameter.compare("PULSE") == 0) {
+                    if ((time_inst < auxiliar->second->atraso) or (time_inst > auxiliar->second->atraso + auxiliar->second->num_de_ciclos*auxiliar->second->periodo))
+                        valor_da_fonte = auxiliar->second->ampl;
+                    else {
+                        long double t_mod_per = (time_inst-auxiliar->second->atraso) - auxiliar->second->periodo * floor((time_inst-auxiliar->second->atraso)/auxiliar->second->periodo);
+                        if (t_mod_per < auxiliar->second->t_rise)
+                            valor_da_fonte = auxiliar->second->ampl + (auxiliar->second->ampl2 - auxiliar->second->ampl)*t_mod_per/auxiliar->second->t_rise;
+                        else if (t_mod_per <= auxiliar->second->t_rise + auxiliar->second->t_ligada)
+                            valor_da_fonte = auxiliar->second->ampl2;
+                        else if (t_mod_per < auxiliar->second->t_rise + auxiliar->second->t_ligada + auxiliar->second->t_fall)
+                            valor_da_fonte = auxiliar->second->ampl2 - (auxiliar->second->ampl2 - auxiliar->second->ampl)*(t_mod_per-(auxiliar->second->t_rise + auxiliar->second->t_ligada))/auxiliar->second->t_fall;
+                        else
+                            valor_da_fonte = auxiliar->second->ampl;
+                    }
+                }
+                else exit(UNKNOWN_ERROR);
                 matrix3 [auxiliar->second->originNodeOrPositiveOutputNode][1]
                         += - valor_da_fonte;
                 matrix3 [auxiliar->second->destinationNodeOrNegativeOutputNode][1]
@@ -681,8 +716,8 @@ void elementsList::buildModifiedNodalMatrix
                     matrix3 [index][1] += auxiliar->second->dc_level + auxiliar->second->ampl * exp(-(time_inst-auxiliar->second->atraso)*auxiliar->second->atenuacao) * sin(2 * M_PI * auxiliar->second->freq * (time_inst-auxiliar->second->atraso) + auxiliar->second->angulo * M_PI / 180.0);
             }
             else if (auxiliar->second->parameter.compare("PULSE") == 0) {
-            	//cout << time_inst << "; atraso=" << auxiliar->second->atraso << " numciclos=" << auxiliar->second->num_de_ciclos << " per=" << auxiliar->second->periodo << endl;
-            	//cout << ;
+                //cout << time_inst << "; atraso=" << auxiliar->second->atraso << " numciclos=" << auxiliar->second->num_de_ciclos << " per=" << auxiliar->second->periodo << endl;
+                //cout << ;
                 if ((time_inst < auxiliar->second->atraso) or (time_inst > auxiliar->second->atraso + auxiliar->second->num_de_ciclos*auxiliar->second->periodo))
                     matrix3 [index][1] += auxiliar->second->ampl;
                 else {

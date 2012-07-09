@@ -2,4 +2,4 @@ teste da fonte de pulso
 
 V1 1 0 PULSE -1 2 1 1 2 5 10 3
 
-.TRAN .1 50 GEAR3 1
+.TRAN 50 .1 GEAR3 1
