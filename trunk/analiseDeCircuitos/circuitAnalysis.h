@@ -7,10 +7,6 @@
  * Programa de análise de circuitos no tempo para estudar os métodos de Gear
  */
 
-// Se, durante o newton raphson, o sistema ficar singular, faz o
-// solveMatrixSystem retornar um bool por parametro dizendo que deu singular,
-// e ai tem que testar outro chute inicial
-
 #ifndef     CIRCUITSANALYSES_H_
 #define     CIRCUITSANALYSES_H_
 
@@ -37,9 +33,9 @@ using namespace std;
 #define     NON_SQUARE_MATRIX_QR    3
 #define     SINGULAR_LINEAR_SYSTEM  4
 #define     UNKNOWN_ERROR           5
+#define     TOO_MANY_NEWTON_RAPHSON 6
 
-#define CHANGE_STRTOLD
-#define OUTPUT_MATLAB
+// #define CHANGE_STRTOLD
 
 #ifdef CHANGE_STRTOLD
 # define strtold(x,y) ((long double)(strtod((x),(y))))

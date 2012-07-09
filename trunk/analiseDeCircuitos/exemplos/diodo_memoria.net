@@ -1,0 +1,17 @@
+# A interseção da curva do diodo com a curva de um thevenin com resistor
+# negativo tem duas soluções. Este circuito usa esse fato para implementar uma
+# memória. Se a chave estiver aberta, a tensão no diodo é constante (é a
+# memória; pode ser -1 ou 0.6). Quando a chave fecha, o valor da tensão Vpulso
+# é "carregado" no diodo, que mantém esse valor após a chave abrir de novo.
+
+# esta tensão é desconexa do resto do circuito
+Vctrl 1 0 PULSE -1 1 1.5 .01 .01 .09 1 1000
+
+V1 2 0 DC -1
+R1 2 3 -2
+N1 3 0 -10 -1.001e-6 -6e-3 -1e-6 0.6 .1e-3 1 10
+
+$1 3 4 1 0 1e10 1e-10
+Vpulso 4 0 PULSE -1 1 0 .1 .1 .9 2 1000
+
+.TRAN 10 .005 GEAR3 1

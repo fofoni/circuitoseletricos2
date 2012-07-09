@@ -162,13 +162,14 @@ int main (int argc, char *argv[]) {
         char new_str[25];
         cppmatrix solucao_anterior;
         long double erro;
+        int qty_of_trials;
 
         matrix2.initialize(list.numberOfNodes(), 1);
 
         list.buildModifiedNodalMatrix(listToPrint, matrix1, matrix2, matrix3,
                                     reactiveElements,
                                     passo/passos_internos/1e9,
-                                    gear_order, UIC, 0);
+                                    1, UIC, 0);
         solucao_anterior = matrix1.solveMatrixSystem(matrix3);
 
 //         cout << "matrix1:" << endl;
@@ -185,12 +186,14 @@ int main (int argc, char *argv[]) {
 //         }
 //         cout << endl;
 
+        qty_of_trials = 0;
+
         do {
 
             list.buildModifiedNodalMatrix(listToPrint, matrix1, solucao_anterior, matrix3,
                                         reactiveElements,
                                         passo/passos_internos/1e9,
-                                        gear_order, UIC, 0);
+                                        1, UIC, 0);
 
             matrix2 = matrix1.solveMatrixSystem(matrix3);
 
@@ -211,6 +214,12 @@ int main (int argc, char *argv[]) {
             erro = sqrt(((matrix2-solucao_anterior).t() * (matrix2-solucao_anterior))[1][1]);
 
             solucao_anterior = matrix2;
+
+            if (++qty_of_trials > 50) {
+                cout << "O método de Newton-Raphson não convergiu em 50 iterações." << endl
+                     << "Abortando o programa" << endl;
+                exit(TOO_MANY_NEWTON_RAPHSON);
+            }
 
         } while (erro > 1e-9);
 
@@ -260,12 +269,15 @@ int main (int argc, char *argv[]) {
     }
 
     for (long int i = 1;
-         i <= tempo_final*passos_internos/passo; i++) {
+         i <= tempo_final*passos_internos/passo; i++)
+    {
 
         char new_str[25];
         cppmatrix solucao_anterior;
         long double erro;
+        int qty_of_trials;
 
+        qty_of_trials = 0;
         do {
 
             list.buildModifiedNodalMatrix(listToPrint, matrix1, matrix2, matrix3,
@@ -283,6 +295,12 @@ int main (int argc, char *argv[]) {
             erro = sqrt(((matrix2-solucao_anterior).t() * (matrix2-solucao_anterior))[1][1]);
 
             solucao_anterior = matrix2;
+
+            if (++qty_of_trials > 50) {
+                cout << "O método de Newton-Raphson não convergiu em 50 iterações." << endl
+                     << "Abortando o programa" << endl;
+                exit(TOO_MANY_NEWTON_RAPHSON);
+            }
 
         } while (erro > 1e-9);
 
