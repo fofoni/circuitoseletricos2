@@ -1,7 +1,6 @@
-oscilador com amplitude crescente
+sdfsdf
 
-C1 1 0 1 IC=0
-L1 1 0 1 IC=-1
-R1 1 0 -10
+I1 0 1 PULSE -1 2 1 1 2 5 10 3
+RL 1 0 1
 
-.TRAN .002 30 GEAR6 1 UIC
+.TRAN 50 .1 GEAR3 1

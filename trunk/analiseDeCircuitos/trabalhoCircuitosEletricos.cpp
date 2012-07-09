@@ -22,7 +22,7 @@ int main (int argc, char *argv[]) {
     string line;
     elementsList list;
     tensionAndCurrent   listToPrint;
-    
+
     // sistema linear: Ax = b
     cppmatrix           matrix1; /* A */
     cppmatrix           matrix2; /* x */
@@ -86,8 +86,8 @@ int main (int argc, char *argv[]) {
                 cout << "Simulacao '" << split_line[0] << "' nao reconhecida." << endl;
                 exit(BAD_NETLIST);
             }
-            passo = strtold(split_line[1].c_str(), NULL);
-            tempo_final = strtold(split_line[2].c_str(), NULL);
+            tempo_final = strtold(split_line[1].c_str(), NULL);
+            passo = strtold(split_line[2].c_str(), NULL);
             if (split_line[3].size() < 4 ||
                 split_line[3].substr(0, 4).compare("GEAR") != 0) {
                 cout << "Metodo '" << split_line[3] << "' nao reconhecido." << endl;
@@ -165,40 +165,56 @@ int main (int argc, char *argv[]) {
 
         matrix2.initialize(list.numberOfNodes(), 1);
 
-		list.buildModifiedNodalMatrix(listToPrint, matrix1, matrix2, matrix3,
-									  reactiveElements,
-									  passo/passos_internos/1000000000.0,
-									  gear_order, UIC, 0);
-		solucao_anterior = matrix1.solveMatrixSystem(matrix3);
+        list.buildModifiedNodalMatrix(listToPrint, matrix1, matrix2, matrix3,
+                                    reactiveElements,
+                                    passo/passos_internos/1e9,
+                                    gear_order, UIC, 0);
+        solucao_anterior = matrix1.solveMatrixSystem(matrix3);
 
-        cout << "                   0";
-        for (int i = 1; i <= matrix1.n; i++) {
-            sprintf(new_str, " % 19.12Lg", matrix2[i][1]);
-            cout << new_str;
-        }
-        cout << endl;
+//         cout << "matrix1:" << endl;
+//         matrix1.printMyself();
+//         cout << "matrix2:" << endl;
+//         solucao_anterior.printMyself();
+//         cout << "matrix3:" << endl;
+//         matrix3.printMyself();
+
+//         cout << "                   0";
+//         for (int i = 1; i <= matrix1.n; i++) {
+//             sprintf(new_str, " % 19.12Lg", matrix2[i][1]);
+//             cout << new_str;
+//         }
+//         cout << endl;
 
         do {
 
-	        cout << "                   0";
-	        for (int i = 1; i <= matrix1.n; i++) {
-	            sprintf(new_str, " % 19.12Lg", matrix2[i][1]);
-	            cout << new_str;
-	        }
-	        cout << endl;
+            list.buildModifiedNodalMatrix(listToPrint, matrix1, solucao_anterior, matrix3,
+                                        reactiveElements,
+                                        passo/passos_internos/1e9,
+                                        gear_order, UIC, 0);
 
-			list.buildModifiedNodalMatrix(listToPrint, matrix1, solucao_anterior, matrix3,
-										  reactiveElements,
-										  passo/passos_internos/1000000000.0,
-										  gear_order, UIC, 0);
+            matrix2 = matrix1.solveMatrixSystem(matrix3);
 
-			matrix2 = matrix1.solveMatrixSystem(matrix3);
+//             cout << "matrix1:" << endl;
+//             matrix1.printMyself();
+//             cout << "matrix2:" << endl;
+//             matrix2.printMyself();
+//             cout << "matrix3:" << endl;
+//             matrix3.printMyself();
 
-			erro = sqrt(((matrix2-solucao_anterior).t() * (matrix2-solucao_anterior))[1][1]);
+//             cout << "                   0";
+//             for (int i = 1; i <= matrix1.n; i++) {
+//                 sprintf(new_str, " % 19.12Lg", matrix2[i][1]);
+//                 cout << new_str;
+//             }
+//             cout << endl;
 
-			solucao_anterior = matrix2;
+            erro = sqrt(((matrix2-solucao_anterior).t() * (matrix2-solucao_anterior))[1][1]);
+
+            solucao_anterior = matrix2;
 
         } while (erro > 1e-9);
+
+//         cout << "---" << endl;
 
 #ifdef OUTPUT_MATLAB
         string header = "A=[%               t";
@@ -243,17 +259,34 @@ int main (int argc, char *argv[]) {
 
     }
 
-    return 0;
-
     for (long int i = 1;
          i <= tempo_final*passos_internos/passo; i++) {
 
         char new_str[25];
+        cppmatrix solucao_anterior;
+        long double erro;
 
-        list.buildModifiedNodalMatrix(listToPrint, matrix1, matrix2, matrix3,
-                                      reactiveElements, passo/passos_internos,
-                                      gear_order, UIC, i*passo/passos_internos);
-        matrix2 = matrix1.solveMatrixSystem(matrix3);
+        do {
+
+            list.buildModifiedNodalMatrix(listToPrint, matrix1, matrix2, matrix3,
+                                        reactiveElements, passo/passos_internos,
+                                        gear_order, UIC, i*passo/passos_internos);
+            matrix2 = matrix1.solveMatrixSystem(matrix3);
+
+//             cout << "                   0";
+//             for (int i = 1; i <= matrix1.n; i++) {
+//                 sprintf(new_str, " % 19.12Lg", matrix2[i][1]);
+//                 cout << new_str;
+//             }
+//             cout << endl;
+
+            erro = sqrt(((matrix2-solucao_anterior).t() * (matrix2-solucao_anterior))[1][1]);
+
+            solucao_anterior = matrix2;
+
+        } while (erro > 1e-9);
+
+//         cout << "---" << endl;
 
         if (i % passos_internos == 0) {
             sprintf(new_str, " % 19.12Lg", i*passo/passos_internos);

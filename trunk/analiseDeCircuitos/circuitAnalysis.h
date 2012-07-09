@@ -27,8 +27,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
+#include <string.h>
+#include <errno.h>
 
-using namespace std; 
+using namespace std;
 
 #define     FILE_IS_NOT_OPEN        1
 #define     BAD_NETLIST             2
