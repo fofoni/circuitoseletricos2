@@ -333,7 +333,7 @@ void elementsList::getElement (string line) {
         if (qty_of_args != 4) {
             cerr << "Erro na leitura do arquivo."
                  << " Maneira correta de especificar um amp.op.:"
-                 << endl << "O<nome> <out+> <out-> <in+> <in->" << endl;
+                 << endl << elementName << " <out+> <out-> <in+> <in->" << endl;
             exit(BAD_NETLIST);
         }
         (*this)[elementName]->originNodeOrPositiveOutputNode = atoi (split_line[1].c_str());
@@ -346,8 +346,8 @@ void elementsList::getElement (string line) {
         if ((qty_of_args < 3) or (qty_of_args > 4)) {
             cerr << "Erro na leitura do arquivo."
                  << " Maneira correta de especificar um elemento reativo:"
-                 << endl << elementName[0]
-                 << "<nome> <nó1> <nó2> <valor> [IC=condição inicial]" << endl;
+                 << endl << elementName
+                 << " <nó1> <nó2> <valor> [IC=condição inicial]" << endl;
             exit(BAD_NETLIST);
         }
         (*this)[elementName]->originNodeOrPositiveOutputNode = atoi (split_line[1].c_str());
@@ -357,8 +357,8 @@ void elementsList::getElement (string line) {
             if (split_line[4].size() <= 3) {
                 cerr << "Erro na leitura do arquivo."
                      << " Maneira correta de especificar um elemento reativo:"
-                     << endl << elementName[0]
-                     << "<nome> <nó1> <nó2> <valor> [IC=condição inicial]" << endl;
+                     << endl << elementName
+                     << " <nó1> <nó2> <valor> [IC=condição inicial]" << endl;
                 exit(BAD_NETLIST);
             }
             (*this)[elementName]->initialConditions = strtold(split_line[4].substr(3).c_str(), NULL);
@@ -370,7 +370,7 @@ void elementsList::getElement (string line) {
         if (qty_of_args != 10) {
             cerr << "Erro na leitura do arquivo."
                 << " Maneira correta de especificar um resistor nao-linear:"
-                << endl << elementName[0]
+                << endl << elementName
                 << " <nó1> <nó2> <quatro pares de valores vi ji>" << endl;
             exit(BAD_NETLIST);
         }
@@ -410,8 +410,44 @@ void elementsList::getElement (string line) {
 
         break;
 
+      case '$':
+        if (qty_of_args < 4 or qty_of_args > 7) {
+            cerr << "Erro na leitura do arquivo."
+                << " Maneira correta de especificar uma chave:"
+                << endl << elementName
+                << " <nó1> <nó2> <nó ctrl+> <nó ctrl-> [<gon> <gof> <vref>]" << endl;
+            exit(BAD_NETLIST);
+        }
+        (*this)[elementName]->originNodeOrPositiveOutputNode = atoi(split_line[1].c_str());
+        (*this)[elementName]->destinationNodeOrNegativeOutputNode = atoi(split_line[2].c_str());
+        (*this)[elementName]->nocrtlPositive = atoi(split_line[3].c_str());
+        (*this)[elementName]->nocrtlNegative = atoi(split_line[4].c_str());
+        switch (qty_of_args) {
+          case 4:
+            (*this)[elementName]->gon = 1e20;
+            (*this)[elementName]->goff = 0;
+            (*this)[elementName]->vref = 0;
+            break;
+          case 5:
+            (*this)[elementName]->gon = strtold(split_line[5].c_str(), NULL);
+            (*this)[elementName]->goff = 0;
+            (*this)[elementName]->vref = 0;
+            break;
+          case 6:
+            (*this)[elementName]->gon = strtold(split_line[5].c_str(), NULL);
+            (*this)[elementName]->goff = strtold(split_line[6].c_str(), NULL);
+            (*this)[elementName]->vref = 0;
+            break;
+          case 7:
+            (*this)[elementName]->gon = strtold(split_line[5].c_str(), NULL);
+            (*this)[elementName]->goff = strtold(split_line[6].c_str(), NULL);
+            (*this)[elementName]->vref = strtold(split_line[7].c_str(), NULL);
+            break;
+        }
+        break;
+
       default:
-        cout << "Element " << elementName << " not implemented (yet?)" << endl;
+        cout << "Element " << elementName << " not implemented." << endl;
         exit(BAD_NETLIST);
 
     }
@@ -516,6 +552,26 @@ void elementsList::buildModifiedNodalMatrix
             matrix1 [auxiliar->second->destinationNodeOrNegativeOutputNode]
                     [auxiliar->second->originNodeOrPositiveOutputNode]
                     += -1/(auxiliar->second->value) ;
+            break;
+          case '$': /* chave */
+            {
+                long double g_chave;
+                long double queda_de_tensao = matrix2[auxiliar->second->nocrtlPositive][1]-matrix2[auxiliar->second->nocrtlNegative][1];
+                if (queda_de_tensao >= auxiliar->second->vref) g_chave = auxiliar->second->gon;
+                else g_chave = auxiliar->second->goff;
+                matrix1 [auxiliar->second->originNodeOrPositiveOutputNode]
+                        [auxiliar->second->originNodeOrPositiveOutputNode]
+                        += g_chave;
+                matrix1 [auxiliar->second->destinationNodeOrNegativeOutputNode]
+                        [auxiliar->second->destinationNodeOrNegativeOutputNode]
+                        += g_chave;
+                matrix1 [auxiliar->second->originNodeOrPositiveOutputNode]
+                        [auxiliar->second->destinationNodeOrNegativeOutputNode]
+                        += -g_chave;
+                matrix1 [auxiliar->second->destinationNodeOrNegativeOutputNode]
+                        [auxiliar->second->originNodeOrPositiveOutputNode]
+                        += -g_chave;
+            }
             break;
           case 'N':
             {
