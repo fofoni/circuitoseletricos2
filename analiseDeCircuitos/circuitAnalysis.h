@@ -25,6 +25,7 @@
 #include <math.h>
 #include <string.h>
 #include <errno.h>
+#include <time.h>
 
 using namespace std;
 
@@ -120,7 +121,7 @@ class cppmatrix : public map<int, map<int, long double> > {
     cppmatrix t(); // transpose
     cppmatrix submatrix(int, int, int, int);
     void subassign(int,int, int,int, cppmatrix);
-    cppmatrix solveMatrixSystem(cppmatrix);
+    cppmatrix solveMatrixSystem(cppmatrix, bool&);
     void printMyself();
     void initialize(int, int);
     void make_id(int);
@@ -134,11 +135,11 @@ class elementsList : public map<string, element*> {
     void    getElement (string);
     int     numberOfNodes();
     void	gearMethod (string element_name,
-                        capacitor_inductor, long double, int, int);
+                        capacitor_inductor, long double, int);
     void    buildModifiedNodalMatrix (tensionAndCurrent&,
                                       cppmatrix&, cppmatrix, cppmatrix&,
                                       capacitor_inductor&,
-                                      long double, int, int, long double);
+                                      long double, int, long double);
     //void    printResult (char**, tensionAndCurrent, cppmatrix);
     /* string locateCurrent (int, int);*/
 };

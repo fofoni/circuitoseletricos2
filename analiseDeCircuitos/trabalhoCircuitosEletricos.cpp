@@ -41,6 +41,8 @@ int main (int argc, char *argv[]) {
 
     map<int, string> split_line;
 
+    cppmatrix solucao_anterior;
+
     if (argc < 2) {
         cout << "Usage:" << endl;
         cout << "  " << argv[0] << " <netlist file>" << endl;
@@ -139,6 +141,13 @@ int main (int argc, char *argv[]) {
          list_iter != list.end();
          list_iter++)
     {
+        if ((list_iter->first[0] != 'V') or (list_iter->first[0] != 'I'))
+            if (list_iter->second->parameter.compare("PULSE") == 0) {
+                if (list_iter->second->t_rise <= 0)
+                    list_iter->second->t_rise = passo/passos_internos;
+                if (list_iter->second->t_fall <= 0)
+                    list_iter->second->t_fall = passo/passos_internos;
+            }
         if ((list_iter->first[0] != 'L') and (list_iter->first[0] != 'C'))
             continue;
         if (UIC==1)
@@ -150,9 +159,9 @@ int main (int argc, char *argv[]) {
     }
 
 #ifdef OUTPUT_MATLAB
-    output_filename = rm_filename_extension(input_filename) + "_answer.m";
+    output_filename = rm_filename_extension(input_filename) + ".m";
 #else
-    output_filename = rm_filename_extension(input_filename) + "_answer.txt";
+    output_filename = rm_filename_extension(input_filename) + ".tab";
 #endif
     answerFile.open (output_filename.c_str());
 
@@ -160,70 +169,70 @@ int main (int argc, char *argv[]) {
     {
 
         char new_str[25];
-        cppmatrix solucao_anterior;
         long double erro;
-        int qty_of_trials;
+        int qty_of_trials, qty_of_guesses;
+        bool singular;
 
         matrix2.initialize(list.numberOfNodes(), 1);
 
         list.buildModifiedNodalMatrix(listToPrint, matrix1, matrix2, matrix3,
                                     reactiveElements,
                                     passo/passos_internos/1e9,
-                                    1, UIC, 0);
-        solucao_anterior = matrix1.solveMatrixSystem(matrix3);
+                                    1, 0);
+        solucao_anterior = matrix1.solveMatrixSystem(matrix3, singular);
 
-//         cout << "matrix1:" << endl;
-//         matrix1.printMyself();
-//         cout << "matrix2:" << endl;
-//         solucao_anterior.printMyself();
-//         cout << "matrix3:" << endl;
-//         matrix3.printMyself();
-
-//         cout << "                   0";
-//         for (int i = 1; i <= matrix1.n; i++) {
-//             sprintf(new_str, " % 19.12Lg", matrix2[i][1]);
-//             cout << new_str;
-//         }
+//         cout << "Esta iteracao: A = "; matrix1.printMyself();
+//         cout << "               x = "; solucao_anterior.printMyself();
+//         cout << "               b = "; matrix3.printMyself();
 //         cout << endl;
 
-        qty_of_trials = 0;
+        qty_of_trials = qty_of_guesses = 0;
+        srand (time(NULL));
 
+        NR_new_guess_t0:
         do {
 
             list.buildModifiedNodalMatrix(listToPrint, matrix1, solucao_anterior, matrix3,
-                                        reactiveElements,
-                                        passo/passos_internos/1e9,
-                                        1, UIC, 0);
+                                          reactiveElements,
+                                          passo/passos_internos/1e9, 1, 0);
 
-            matrix2 = matrix1.solveMatrixSystem(matrix3);
+            matrix2 = matrix1.solveMatrixSystem(matrix3, singular);
 
-//             cout << "matrix1:" << endl;
-//             matrix1.printMyself();
-//             cout << "matrix2:" << endl;
-//             matrix2.printMyself();
-//             cout << "matrix3:" << endl;
-//             matrix3.printMyself();
-
-//             cout << "                   0";
-//             for (int i = 1; i <= matrix1.n; i++) {
-//                 sprintf(new_str, " % 19.12Lg", matrix2[i][1]);
-//                 cout << new_str;
-//             }
+//             cout << "Esta iteracao: A = "; matrix1.printMyself();
+//             cout << "               x = "; matrix2.printMyself();
+//             cout << "               b = "; matrix3.printMyself();
 //             cout << endl;
+
+            if (singular) {
+                qty_of_trials = 50;
+                matrix2.initialize(matrix1.n, 1);
+            }
 
             erro = sqrt(((matrix2-solucao_anterior).t() * (matrix2-solucao_anterior))[1][1]);
 
-            solucao_anterior = matrix2;
-
-            if (++qty_of_trials > 50) {
-                cout << "O método de Newton-Raphson não convergiu em 50 iterações." << endl
-                     << "Abortando o programa" << endl;
-                exit(TOO_MANY_NEWTON_RAPHSON);
+            if (++qty_of_trials >= 50) {
+                long double norm;
+                if (++qty_of_guesses > 50) {
+                    cout << "O Método de Newton-Raphson não converge." << endl;
+                    exit(TOO_MANY_NEWTON_RAPHSON);
+                }
+                cout << "O método de Newton-Raphson não convergiu em 10 iterações." << endl
+                     << "Tentando de novo." << endl;
+                qty_of_trials = 0;
+                norm = sqrt((matrix2.t() * matrix2)[1][1]);
+                if (norm<1) norm=1;
+                for (int k=1; k<=matrix1.n; k++) {
+                    long double extra = 2*((long double)(rand()))/((long double)(RAND_MAX))-1;
+//                     cout << matrix2[k][1] << " + " << 100*norm << " * " << extra << " = " << solucao_anterior[k][1] + 100*norm*extra << endl;
+                    if (solucao_anterior[k][1] != matrix2[k][1])
+                        solucao_anterior[k][1] = matrix2[k][1] + 1000*norm*extra;
+                }
+                goto NR_new_guess_t0;
             }
 
-        } while (erro > 1e-9);
+            solucao_anterior = matrix2;
 
-//         cout << "---" << endl;
+        } while (erro > 1e-9 or qty_of_trials==1);
 
 #ifdef OUTPUT_MATLAB
         string header = "A=[%               t";
@@ -239,9 +248,6 @@ int main (int argc, char *argv[]) {
             header = header + new_str;
         }
         answerFile << header << endl;
-
-        //matrix1.printMyself(); cout << endl;
-        //matrix3.printMyself(); cout << endl;
 
         answerFile << "                   0";
         for (int i = 1; i <= matrix1.n; i++) {
@@ -273,38 +279,56 @@ int main (int argc, char *argv[]) {
     {
 
         char new_str[25];
-        cppmatrix solucao_anterior;
         long double erro;
-        int qty_of_trials;
+        int qty_of_trials, qty_of_guesses;
+        bool singular;
 
-        qty_of_trials = 0;
+//         cout << "==============>> I!:" << i << endl;
+
+        qty_of_trials = qty_of_guesses = 0;
+        NR_new_guess:
         do {
 
-            list.buildModifiedNodalMatrix(listToPrint, matrix1, matrix2, matrix3,
+            list.buildModifiedNodalMatrix(listToPrint, matrix1, solucao_anterior, matrix3,
                                         reactiveElements, passo/passos_internos,
-                                        gear_order, UIC, i*passo/passos_internos);
-            matrix2 = matrix1.solveMatrixSystem(matrix3);
+                                        gear_order, i*passo/passos_internos);
+            matrix2 = matrix1.solveMatrixSystem(matrix3, singular);
 
-//             cout << "                   0";
-//             for (int i = 1; i <= matrix1.n; i++) {
-//                 sprintf(new_str, " % 19.12Lg", matrix2[i][1]);
-//                 cout << new_str;
-//             }
+            if (singular) {
+                qty_of_trials = 50;
+                matrix2.initialize(matrix1.n, 1);
+            }
+
+//             cout << "Esta iteracao: A = "; matrix1.printMyself();
+//             cout << "               x = "; matrix2.printMyself();
+//             cout << "               b = "; matrix3.printMyself();
 //             cout << endl;
 
             erro = sqrt(((matrix2-solucao_anterior).t() * (matrix2-solucao_anterior))[1][1]);
 
-            solucao_anterior = matrix2;
-
             if (++qty_of_trials > 50) {
-                cout << "O método de Newton-Raphson não convergiu em 50 iterações." << endl
-                     << "Abortando o programa" << endl;
-                exit(TOO_MANY_NEWTON_RAPHSON);
+                long double norm;
+                if (++qty_of_guesses > 50) {
+                    cout << "O Método de Newton-Raphson não converge." << endl;
+                    exit(TOO_MANY_NEWTON_RAPHSON);
+                }
+                cout << "O método de Newton-Raphson não convergiu em 10 iterações." << endl
+                     << "Tentando de novo." << endl;
+                qty_of_trials = 0;
+                norm = sqrt((matrix2.t() * matrix2)[1][1]);
+                if (norm<1) norm=1;
+                for (int k=1; k<=matrix1.n; k++) {
+                    long double extra = 2*((long double)(rand()))/((long double)(RAND_MAX))-1;
+//                     cout << matrix2[k][1] << " + " << 100*norm << " * " << extra << " = " << solucao_anterior[k][1] + 100*norm*extra << endl;
+                    if (solucao_anterior[k][1] != matrix2[k][1])
+                        solucao_anterior[k][1] = matrix2[k][1] + 100*norm*extra;
+                }
+                goto NR_new_guess;
             }
 
-        } while (erro > 1e-9);
+            solucao_anterior = matrix2;
 
-//         cout << "---" << endl;
+        } while (erro > 1e-9 or qty_of_trials==1);
 
         if (i % passos_internos == 0) {
             sprintf(new_str, " % 19.12Lg", i*passo/passos_internos);

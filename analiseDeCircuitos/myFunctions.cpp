@@ -101,7 +101,7 @@ void cppmatrix::subassign(int i1, int i2, int j1, int j2, cppmatrix A) {
 
 // Solves (for the vector x) the system Ax=b, with A = *this
 // Equivalent to octave/matlab's A\b
-cppmatrix cppmatrix::solveMatrixSystem(cppmatrix b) {
+cppmatrix cppmatrix::solveMatrixSystem(cppmatrix b, bool& singular) {
     if (n != m) {
         cerr << "ERRO: este algoritmo nao faz decomposicao QR"
                 " de matrizes nao-quadradas" << endl;
@@ -117,8 +117,8 @@ cppmatrix cppmatrix::solveMatrixSystem(cppmatrix b) {
         u[1][1] = u[1][1] + sgn(R[i][i])*normx;
         normx = sqrt((u.t() * u)[1][1]);
         if (normx < 1e-9) {
-            cerr << "WARNING: Sistema potencialmente singular." << endl;
-            cerr << "         Norma da sub-coluna: " << normx << endl;
+            cout << "WARNING: Sistema potencialmente singular." << endl;
+            cout << "         Norma da sub-coluna: " << normx << endl;
             continue;
         }
         u = u*(1/normx);
@@ -132,12 +132,15 @@ cppmatrix cppmatrix::solveMatrixSystem(cppmatrix b) {
     // by back-substitution
     for (int i=n; i>=1; i--) {
         if (R[i][i] == 0) {
-            cerr << "ERRO: Sistema singular." << endl;
-            exit(SINGULAR_LINEAR_SYSTEM);
+            cout << "ERRO: Sistema singular." << endl;
+            cout << "      Tentando de novo...";
+            singular = true;
+            return x;
         }
         x[i][1] = b[i][1] - (R.submatrix(i,i, i+1,n)*x.submatrix(i+1,n, 1,1))[1][1] ;
         x[i][1] = x[i][1] / R[i][i];
     }
+    singular = false;
     return x;
 }
 
@@ -364,6 +367,8 @@ void elementsList::getElement (string line) {
             (*this)[elementName]->initialConditions = strtold(split_line[4].substr(3).c_str(), NULL);
 //            cerr << "READ IC=" << (*this)[elementName]->initialConditions << endl;
         }
+        else
+            (*this)[elementName]->initialConditions = 0;
         break;
 
       case 'N':
@@ -511,7 +516,7 @@ string elementsList::locateCurrent (int node1, int node2){
 void elementsList::buildModifiedNodalMatrix
     (tensionAndCurrent& listToPrint, cppmatrix& matrix1, cppmatrix matrix2, cppmatrix& matrix3,
     capacitor_inductor& reactiveElements, long double passo, int gear_order,
-    int UIC, long double time_inst) {
+    long double time_inst) {
 
     /* O index inicialmente corresponde ao numero de nos do circuito. Ao longo
      * da funcao, ele é incrementado cada vez que se faz necessario o calculo
@@ -778,8 +783,13 @@ void elementsList::buildModifiedNodalMatrix
                     matrix3 [index][1] += auxiliar->second->ampl;
                 else {
                     long double t_mod_per = (time_inst-auxiliar->second->atraso) - auxiliar->second->periodo * floor((time_inst-auxiliar->second->atraso)/auxiliar->second->periodo);
-                    if (t_mod_per < auxiliar->second->t_rise)
-                        matrix3 [index][1] += auxiliar->second->ampl + (auxiliar->second->ampl2 - auxiliar->second->ampl)*t_mod_per/auxiliar->second->t_rise;
+                    //if (true) matrix3 [index][1] += 1e5 * t_mod_per;
+                    if (t_mod_per <= auxiliar->second->t_rise) {
+//                         if (auxiliar->second->t_rise == 0.0)
+//                             matrix3 [index][1] += auxiliar->second->ampl;
+//                         else
+                            matrix3 [index][1] += auxiliar->second->ampl + (auxiliar->second->ampl2 - auxiliar->second->ampl)*t_mod_per/auxiliar->second->t_rise;
+                    }
                     else if (t_mod_per <= auxiliar->second->t_rise + auxiliar->second->t_ligada)
                         matrix3 [index][1] += auxiliar->second->ampl2;
                     else if (t_mod_per < auxiliar->second->t_rise + auxiliar->second->t_ligada + auxiliar->second->t_fall)
@@ -810,7 +820,7 @@ void elementsList::buildModifiedNodalMatrix
             break;
           case 'L': case 'C': /* indutor e capacitor*/
             gearMethod (auxiliar->first, reactiveElements,
-                        passo, gear_order, UIC);
+                        passo, gear_order);
             if (auxiliar->first[0] == 'C') {
 
                 matrix1 [auxiliar->second->originNodeOrPositiveOutputNode]
@@ -912,7 +922,7 @@ void print_state(capacitor_inductor reactiveElements) {
 
 void elementsList::gearMethod(string element_name,
                               capacitor_inductor reactiveElements,
-                              long double passo, int gear_order, int UIC) {
+                              long double passo, int gear_order) {
 
     long double sourceValue = 0;
 
