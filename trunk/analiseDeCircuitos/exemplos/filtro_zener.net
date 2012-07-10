@@ -16,6 +16,9 @@ R1 3 4 100
 Nzener 0 4 -7 -10 -6 1e-3 .6 .1e-3 1 10
 
 # carga
-RL 4 0 10e3
+Icarga 4 0 SIN 1.5e-2 1.5e-2 20 0 0 0 100
+
+#para plotar a corrente
+#Hauxiliar 6 0 4 5 1
 
 .TRAN .05 .0001 GEAR4 1
